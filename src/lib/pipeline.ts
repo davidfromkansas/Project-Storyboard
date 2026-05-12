@@ -1,7 +1,7 @@
 import { extractArticleContent } from "./exa";
 import { openai } from "./openai";
 import { prisma } from "./prisma";
-import { INSIGHT_EXTRACTION_PROMPT } from "./prompts";
+import { INSIGHT_EXTRACTION_PROMPT, IMAGE_STYLE_PREFIX } from "./prompts";
 
 function createLimiter(concurrency: number) {
   let active = 0;
@@ -183,9 +183,10 @@ export async function runPipeline(
       slides.map((slide) =>
         limit(async () => {
           try {
+            const fullPrompt = IMAGE_STYLE_PREFIX + slide.infographicPrompt;
             const image = await openai.images.generate({
               model: "gpt-image-2",
-              prompt: slide.infographicPrompt,
+              prompt: fullPrompt,
               n: 1,
               size: "1536x1024",
               quality: "medium",
