@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { signOut } from "next-auth/react";
 
 interface LandingPageProps {
   user: {
@@ -62,7 +61,11 @@ export function LandingPage({ user }: LandingPageProps) {
         <div className="flex items-center gap-3">
           <span className="text-sm text-[#64748b]">{user.email}</span>
           <button
-            onClick={() => signOut()}
+            onClick={() => {
+              fetch("/api/auth/signout", { method: "POST" }).then(() => {
+                window.location.href = "/login";
+              });
+            }}
             className="text-sm text-[#94a3b8] hover:text-[#64748b] transition-colors"
           >
             Sign out
