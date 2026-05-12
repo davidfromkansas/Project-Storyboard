@@ -38,51 +38,44 @@
     .edit-preview {
       flex: 1; display: flex; flex-direction: column;
       align-items: center; justify-content: center;
-      padding: var(--space-8); position: relative;
+      padding: var(--space-6); position: relative;
       background: var(--color-background);
     }
-    .edit-slide-container {
-      max-width: 640px; width: 100%; aspect-ratio: 16 / 10;
-      border-radius: var(--radius-lg); overflow: hidden;
-      box-shadow: var(--shadow-lg); position: relative;
+    .edit-infographic-container {
+      max-width: 580px; width: 100%; position: relative;
+    }
+    .edit-infographic {
+      width: 100%; aspect-ratio: 3 / 2;
+      border-radius: var(--radius-lg); box-shadow: var(--shadow-lg);
+      background: #fff; overflow: hidden;
       border: 2px solid var(--color-primary);
+      transition: opacity 0.25s ease;
     }
-    .edit-slide-inner {
-      display: flex; flex-direction: column; justify-content: center;
-      height: 100%; padding: var(--space-8) var(--space-10);
-      background: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%);
-    }
-    .edit-slide-inner h3 {
-      font-size: var(--font-size-xl); font-weight: 800;
-      margin-bottom: var(--space-6); color: var(--color-text);
-    }
-    .edit-stat-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--space-3); }
-    .edit-stat {
-      background: var(--color-surface); border-radius: var(--radius-md);
-      padding: var(--space-4); text-align: center; border: 1px solid var(--color-border);
-    }
-    .edit-stat-value {
-      font-size: var(--font-size-3xl); font-weight: 800; color: var(--color-primary); line-height: 1.1;
-    }
-    .edit-stat-label {
-      font-size: var(--font-size-xs); color: var(--color-text-secondary); margin-top: var(--space-1);
-    }
-    .edit-stat-bar { height: 4px; background: var(--color-border-light); border-radius: 2px; margin-top: var(--space-2); overflow: hidden; }
-    .edit-stat-bar-fill { height: 100%; border-radius: 2px; }
-
-    /* Editing indicator */
     .editing-badge {
       position: absolute; top: -12px; left: 50%; transform: translateX(-50%);
       display: flex; align-items: center; gap: var(--space-2);
       padding: var(--space-1) var(--space-3);
       background: var(--color-primary); color: #fff;
       border-radius: var(--radius-full); font-size: var(--font-size-xs); font-weight: 600;
-      white-space: nowrap;
+      white-space: nowrap; z-index: 2;
     }
+
+    /* Version history dots */
+    .version-strip {
+      display: flex; align-items: center; gap: var(--space-2); margin-top: var(--space-4);
+    }
+    .version-dot {
+      width: 8px; height: 8px; border-radius: 50%;
+      background: var(--color-border); cursor: pointer;
+      transition: all var(--transition-fast);
+    }
+    .version-dot.active { background: var(--color-primary); width: 20px; border-radius: 4px; }
+    .version-dot:hover { background: var(--color-text-muted); }
+    .version-label { font-size: var(--font-size-xs); color: var(--color-text-muted); margin-left: var(--space-2); }
 
     /* Slide nav in preview */
     .edit-slide-nav {
-      display: flex; align-items: center; gap: var(--space-3); margin-top: var(--space-6);
+      display: flex; align-items: center; gap: var(--space-3); margin-top: var(--space-4);
     }
     .edit-nav-btn {
       width: 36px; height: 36px; border-radius: 50%;
@@ -96,34 +89,52 @@
     /* Thumbnail strip */
     .edit-thumbs {
       display: flex; gap: var(--space-2); margin-top: var(--space-4);
+      overflow-x: auto; scrollbar-width: none; max-width: 580px;
     }
+    .edit-thumbs::-webkit-scrollbar { display: none; }
     .edit-thumb {
-      width: 56px; height: 35px; border-radius: var(--radius-sm);
+      width: 48px; height: 32px; border-radius: var(--radius-sm);
       border: 2px solid transparent; cursor: pointer; flex-shrink: 0;
-      transition: all var(--transition-fast); overflow: hidden;
+      transition: all var(--transition-fast); overflow: hidden; background: #fff;
     }
     .edit-thumb.active { border-color: var(--color-primary); }
     .edit-thumb:hover { border-color: var(--color-text-muted); }
-    .edit-thumb-inner {
-      width: 100%; height: 100%; border-radius: 2px;
-    }
 
     /* Right: editing panel */
     .edit-panel {
-      width: 380px; background: var(--color-surface);
+      width: 420px; background: var(--color-surface);
       border-left: 1px solid var(--color-border);
       display: flex; flex-direction: column;
       overflow-y: auto;
     }
-    .panel-header {
-      padding: var(--space-5) var(--space-6);
-      border-bottom: 1px solid var(--color-border);
-    }
-    .panel-header h3 {
-      font-size: var(--font-size-lg); font-weight: 700; margin-bottom: var(--space-1);
-    }
-    .panel-header p { font-size: var(--font-size-sm); color: var(--color-text-secondary); }
 
+    /* Tab navigation */
+    .panel-tabs {
+      display: flex; border-bottom: 2px solid var(--color-border-light);
+      padding: 0 var(--space-6);
+      background: var(--color-surface);
+      position: sticky; top: 0; z-index: 5;
+    }
+    .panel-tab {
+      padding: var(--space-4) var(--space-4);
+      font-size: var(--font-size-sm); font-weight: 600;
+      color: var(--color-text-muted); cursor: pointer;
+      border-bottom: 2px solid transparent;
+      margin-bottom: -2px; transition: all var(--transition-fast);
+      background: none; border-top: none; border-left: none; border-right: none;
+      font-family: var(--font-family);
+      display: flex; align-items: center; gap: var(--space-2);
+    }
+    .panel-tab:hover { color: var(--color-text-secondary); }
+    .panel-tab.active {
+      color: var(--color-primary); border-bottom-color: var(--color-primary);
+    }
+
+    /* Tab content */
+    .tab-content { display: none; flex: 1; flex-direction: column; }
+    .tab-content.active { display: flex; }
+
+    /* Panel sections */
     .panel-section {
       padding: var(--space-5) var(--space-6);
       border-bottom: 1px solid var(--color-border-light);
@@ -134,30 +145,78 @@
       color: var(--color-text-muted); margin-bottom: var(--space-3);
     }
 
-    /* AI Prompt */
-    .ai-prompt-area {
-      width: 100%; min-height: 80px; padding: var(--space-3) var(--space-4);
+    /* Content tab inputs */
+    .content-field { margin-bottom: var(--space-4); }
+    .content-field:last-child { margin-bottom: 0; }
+    .content-field label {
+      display: block; font-size: var(--font-size-sm); font-weight: 600;
+      color: var(--color-text); margin-bottom: var(--space-2);
+    }
+    .content-input {
+      width: 100%; padding: var(--space-3) var(--space-4);
+      border: 1.5px solid var(--color-border); border-radius: var(--radius-md);
+      font-family: var(--font-family); font-size: var(--font-size-sm);
+      color: var(--color-text); outline: none;
+      transition: border-color var(--transition-fast);
+    }
+    .content-input:focus { border-color: var(--color-primary); }
+    textarea.content-input { min-height: 80px; resize: vertical; }
+    .supporting-idea-group {
+      background: var(--color-background); border-radius: var(--radius-md);
+      padding: var(--space-3) var(--space-4); margin-bottom: var(--space-3);
+      border: 1px solid var(--color-border-light);
+    }
+    .supporting-idea-group label {
+      font-size: var(--font-size-xs); font-weight: 600; color: var(--color-primary);
+      margin-bottom: var(--space-1); display: block;
+    }
+    .supporting-idea-group input {
+      width: 100%; padding: var(--space-2); border: 1px solid var(--color-border);
+      border-radius: var(--radius-sm); font-family: var(--font-family);
+      font-size: var(--font-size-xs); color: var(--color-text); outline: none; margin-top: var(--space-1);
+    }
+    .supporting-idea-group input:focus { border-color: var(--color-primary); }
+
+    /* Design tab - infographic prompt */
+    .infographic-prompt-area {
+      width: 100%; min-height: 140px; padding: var(--space-3) var(--space-4);
       border: 1.5px solid var(--color-border); border-radius: var(--radius-md);
       font-family: var(--font-family); font-size: var(--font-size-sm);
       resize: vertical; outline: none; color: var(--color-text);
       transition: border-color var(--transition-fast);
+      line-height: 1.6;
     }
-    .ai-prompt-area::placeholder { color: var(--color-text-muted); }
-    .ai-prompt-area:focus { border-color: var(--color-primary); }
+    .infographic-prompt-area::placeholder { color: var(--color-text-muted); }
+    .infographic-prompt-area:focus { border-color: var(--color-primary); }
 
-    .prompt-chips {
+    .style-presets {
+      display: grid; grid-template-columns: repeat(2, 1fr); gap: var(--space-3);
+    }
+    .style-preset {
+      padding: var(--space-3) var(--space-4);
+      background: var(--color-background); border: 2px solid var(--color-border);
+      border-radius: var(--radius-md); cursor: pointer;
+      transition: all var(--transition-fast); text-align: center;
+    }
+    .style-preset:hover { border-color: var(--color-text-muted); }
+    .style-preset.active { border-color: var(--color-primary); background: var(--color-primary-50); }
+    .style-preset-icon { font-size: 20px; margin-bottom: var(--space-1); }
+    .style-preset-label { font-size: var(--font-size-xs); font-weight: 600; color: var(--color-text); }
+
+    .ai-suggestion-chips {
       display: flex; flex-wrap: wrap; gap: var(--space-2); margin-top: var(--space-3);
     }
-    .prompt-chip {
+    .ai-chip {
       padding: var(--space-1) var(--space-3);
       background: var(--color-primary-50); border: 1px solid var(--color-primary-light);
       border-radius: var(--radius-full); font-size: var(--font-size-xs);
       color: var(--color-primary); cursor: pointer; font-weight: 500;
       transition: all var(--transition-fast);
     }
-    .prompt-chip:hover { background: var(--color-primary-light); }
+    .ai-chip:hover { background: var(--color-primary-light); }
 
-    .apply-btn {
+    /* Regenerate button */
+    .regenerate-btn {
       width: 100%; margin-top: var(--space-4);
       padding: var(--space-3) var(--space-5);
       background: var(--color-primary); color: #fff; border: none;
@@ -166,49 +225,9 @@
       display: flex; align-items: center; justify-content: center; gap: var(--space-2);
       transition: all var(--transition-fast);
     }
-    .apply-btn:hover { background: var(--color-primary-hover); }
+    .regenerate-btn:hover { background: var(--color-primary-hover); }
 
-    /* Color theme */
-    .theme-swatches { display: flex; gap: var(--space-3); }
-    .swatch {
-      width: 40px; height: 40px; border-radius: var(--radius-md);
-      cursor: pointer; border: 2px solid transparent;
-      transition: all var(--transition-fast); position: relative;
-    }
-    .swatch:hover { transform: scale(1.1); }
-    .swatch.active { border-color: var(--color-text); }
-    .swatch.active::after {
-      content: ''; position: absolute; inset: -5px;
-      border: 2px solid var(--color-primary); border-radius: 10px;
-    }
-
-    /* Layout options */
-    .layout-options { display: flex; gap: var(--space-3); }
-    .layout-opt {
-      flex: 1; height: 56px; border-radius: var(--radius-md);
-      border: 2px solid var(--color-border); cursor: pointer;
-      display: flex; align-items: center; justify-content: center;
-      transition: all var(--transition-fast); background: var(--color-background);
-    }
-    .layout-opt:hover { border-color: var(--color-text-muted); }
-    .layout-opt.active { border-color: var(--color-primary); background: var(--color-primary-50); }
-    .layout-opt-inner { width: 80%; height: 70%; display: flex; gap: 3px; }
-    .layout-block { background: var(--color-border); border-radius: 2px; }
-
-    /* Icon picker */
-    .icon-grid {
-      display: grid; grid-template-columns: repeat(6, 1fr); gap: var(--space-2);
-    }
-    .icon-item {
-      width: 100%; aspect-ratio: 1; border-radius: var(--radius-md);
-      border: 1px solid var(--color-border); display: flex; align-items: center;
-      justify-content: center; cursor: pointer; color: var(--color-text-secondary);
-      transition: all var(--transition-fast); background: var(--color-surface);
-    }
-    .icon-item:hover { border-color: var(--color-primary); color: var(--color-primary); background: var(--color-primary-50); }
-    .icon-item.active { border-color: var(--color-primary); color: var(--color-primary); background: var(--color-primary-50); }
-
-    /* Save button */
+    /* Panel footer */
     .panel-footer {
       padding: var(--space-5) var(--space-6);
       border-top: 1px solid var(--color-border);
@@ -244,11 +263,11 @@
       </div>
       <div class="edit-topbar-right">
         <span class="autosave"><span class="dot"></span> Saved</span>
-        <button class="btn btn-sm btn-secondary">
+        <button class="btn btn-sm btn-secondary undo-btn">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>
           Undo
         </button>
-        <button class="btn btn-sm btn-accent">
+        <button class="btn btn-sm btn-accent publish-btn">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
           Publish
         </button>
@@ -259,143 +278,163 @@
     <div class="edit-body">
       <!-- Left: preview -->
       <div class="edit-preview">
-        <div class="edit-slide-container animate-fade-in">
+        <div class="edit-infographic-container">
           <div class="editing-badge">
             <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-            Editing slide 4
+            <span id="editingBadgeText">Editing insight 4</span>
           </div>
-          <div class="edit-slide-inner">
-            <h3>Adoption by the Numbers</h3>
-            <div class="edit-stat-grid">
-              <div class="edit-stat">
-                <div class="edit-stat-value">340%</div>
-                <div class="edit-stat-label">Tool adoption growth</div>
-                <div class="edit-stat-bar"><div class="edit-stat-bar-fill" style="width:85%; background: var(--color-primary);"></div></div>
-              </div>
-              <div class="edit-stat">
-                <div class="edit-stat-value">67%</div>
-                <div class="edit-stat-label">Teams using Gen UI</div>
-                <div class="edit-stat-bar"><div class="edit-stat-bar-fill" style="width:67%; background: var(--color-secondary);"></div></div>
-              </div>
-              <div class="edit-stat">
-                <div class="edit-stat-value">4.2x</div>
-                <div class="edit-stat-label">Faster iteration</div>
-                <div class="edit-stat-bar"><div class="edit-stat-bar-fill" style="width:72%; background: var(--color-warning);"></div></div>
-              </div>
-            </div>
-          </div>
+          <div class="edit-infographic" id="editInfographic"></div>
+        </div>
+
+        <!-- Version history -->
+        <div class="version-strip">
+          <div class="version-dot active" title="Current version"></div>
+          <div class="version-dot" title="Previous version"></div>
+          <div class="version-dot" title="Original"></div>
+          <span class="version-label">v3 (current)</span>
         </div>
 
         <!-- Slide nav -->
         <div class="edit-slide-nav">
-          <button class="edit-nav-btn" aria-label="Previous">
+          <button class="edit-nav-btn" aria-label="Previous" id="prevBtn">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
           </button>
-          <span class="edit-slide-counter">4 / 12</span>
-          <button class="edit-nav-btn" aria-label="Next">
+          <span class="edit-slide-counter" id="slideCounter">4 / 12</span>
+          <button class="edit-nav-btn" aria-label="Next" id="nextBtn">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
           </button>
         </div>
 
         <!-- Thumbnails -->
-        <div class="edit-thumbs">
-          <div class="edit-thumb"><div class="edit-thumb-inner" style="background: linear-gradient(135deg, #1e1b4b, #4338ca);"></div></div>
-          <div class="edit-thumb"><div class="edit-thumb-inner" style="background: linear-gradient(180deg, #f8fafc, #f1f5f9);"></div></div>
-          <div class="edit-thumb"><div class="edit-thumb-inner" style="background: linear-gradient(135deg, #fef3c7, #fff7ed);"></div></div>
-          <div class="edit-thumb active"><div class="edit-thumb-inner" style="background: linear-gradient(180deg, #f8fafc, #f1f5f9);"></div></div>
-          <div class="edit-thumb"><div class="edit-thumb-inner" style="background: linear-gradient(135deg, #fef3c7, #fff7ed);"></div></div>
-          <div class="edit-thumb"><div class="edit-thumb-inner" style="background: linear-gradient(180deg, #f8fafc, #f1f5f9);"></div></div>
-        </div>
+        <div class="edit-thumbs" id="editThumbs"></div>
       </div>
 
       <!-- Right: editing panel -->
-      <div class="edit-panel animate-slide-in">
-        <div class="panel-header">
-          <h3>Customize this slide</h3>
-          <p>Use AI or manual controls to edit</p>
-        </div>
-
-        <!-- AI Prompt -->
-        <div class="panel-section">
-          <div class="panel-section-label">AI Edit</div>
-          <textarea class="ai-prompt-area" placeholder="Describe what you want to change..."></textarea>
-          <div class="prompt-chips">
-            <span class="prompt-chip">Make this more visual</span>
-            <span class="prompt-chip">Add more statistics</span>
-            <span class="prompt-chip">Simplify the language</span>
-            <span class="prompt-chip">Add comparison chart</span>
-          </div>
-          <button class="apply-btn">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
-            Apply with AI
+      <div class="edit-panel">
+        <!-- Tabs -->
+        <div class="panel-tabs">
+          <button class="panel-tab active" data-tab="content">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+            Content
+          </button>
+          <button class="panel-tab" data-tab="design">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="13.5" cy="6.5" r="2.5"/><path d="M17.08 8.93a10 10 0 0 1 0 6.14M3 12a10 10 0 0 0 17.08 2.93"/><circle cx="6.5" cy="17.5" r="2.5"/><circle cx="17.5" cy="17.5" r="2.5"/></svg>
+            Design
           </button>
         </div>
 
-        <!-- Color Theme -->
-        <div class="panel-section">
-          <div class="panel-section-label">Color Theme</div>
-          <div class="theme-swatches">
-            <div class="swatch" style="background: linear-gradient(135deg, #6366f1, #8b5cf6);" title="Indigo"></div>
-            <div class="swatch active" style="background: linear-gradient(135deg, #14b8a6, #06b6d4);" title="Teal"></div>
-            <div class="swatch" style="background: linear-gradient(135deg, #f59e0b, #f97316);" title="Amber"></div>
-            <div class="swatch" style="background: linear-gradient(135deg, #1e293b, #475569);" title="Slate"></div>
+        <!-- Content Tab -->
+        <div class="tab-content active" id="contentTab">
+          <div class="panel-section">
+            <div class="panel-section-label">Insight Content</div>
+            <div class="content-field">
+              <label>Main Idea</label>
+              <input type="text" class="content-input" id="editMainIdea" value="Adoption by the Numbers">
+            </div>
+            <div class="content-field">
+              <label>Summary</label>
+              <textarea class="content-input" id="editSummary">The quantitative evidence for AI design adoption is overwhelming. Tool adoption has grown 340% year-over-year, with 67% of design teams now using generative UI tools daily. Teams report 4.2x faster iteration cycles compared to traditional workflows.</textarea>
+            </div>
+          </div>
+
+          <div class="panel-section">
+            <div class="panel-section-label">Supporting Ideas</div>
+            <div class="supporting-idea-group">
+              <label>Idea 1</label>
+              <input type="text" value="340% Tool Adoption Growth">
+              <input type="text" value="From niche experimentation to mainstream adoption, driven by productivity gains and falling costs." style="margin-top:4px;">
+            </div>
+            <div class="supporting-idea-group">
+              <label>Idea 2</label>
+              <input type="text" value="67% Daily Usage Rate">
+              <input type="text" value="The majority of professional design teams have integrated AI tools into daily production workflows." style="margin-top:4px;">
+            </div>
+            <div class="supporting-idea-group">
+              <label>Idea 3</label>
+              <input type="text" value="4.2x Iteration Speed">
+              <input type="text" value="Generate, test, and refine design variations in minutes rather than days." style="margin-top:4px;">
+            </div>
+          </div>
+
+          <div class="panel-section">
+            <button class="regenerate-btn" id="contentRegenBtn">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+              Regenerate Infographic
+            </button>
+            <p style="font-size:var(--font-size-xs); color:var(--color-text-muted); margin-top:var(--space-2); text-align:center;">
+              GPT-5.5 will create a new infographic prompt from your edits, then gpt-image-2 will render it.
+            </p>
           </div>
         </div>
 
-        <!-- Layout -->
-        <div class="panel-section">
-          <div class="panel-section-label">Layout</div>
-          <div class="layout-options">
-            <div class="layout-opt">
-              <div class="layout-opt-inner" style="flex-direction: column;">
-                <div class="layout-block" style="flex: 1; width: 100%;"></div>
-                <div class="layout-block" style="flex: 2; width: 100%;"></div>
-              </div>
+        <!-- Design Tab -->
+        <div class="tab-content" id="designTab">
+          <div class="panel-section">
+            <div class="panel-section-label">Infographic Prompt</div>
+            <textarea class="infographic-prompt-area" id="designPrompt">Create a whiteboard-style infographic showing "Adoption by the Numbers" — use a clean white background with hand-drawn marker aesthetic. Center three large statistic cards: "340%" in green showing tool adoption growth with upward arrow, "67%" in blue showing daily usage rate with progress bar, and "4.2x" in purple showing iteration speed with clock icon. Use minimal color (green for growth, blue for insight, purple for scale). Add subtle hand-drawn connecting lines between stats. Footer: "AI Design Adoption 2025". Style: Khan Academy whiteboard, conceptual clarity, no flashy graphics.</textarea>
+            <div class="ai-suggestion-chips">
+              <span class="ai-chip">Make more hand-drawn</span>
+              <span class="ai-chip">Add color symbolism</span>
+              <span class="ai-chip">Simplify layout</span>
+              <span class="ai-chip">More whitespace</span>
+              <span class="ai-chip">Add flow arrows</span>
             </div>
-            <div class="layout-opt active">
-              <div class="layout-opt-inner">
-                <div class="layout-block" style="flex: 1;"></div>
-                <div class="layout-block" style="flex: 1;"></div>
-                <div class="layout-block" style="flex: 1;"></div>
+          </div>
+
+          <div class="panel-section">
+            <div class="panel-section-label">Style Presets</div>
+            <div class="style-presets">
+              <div class="style-preset active" data-style="whiteboard">
+                <div class="style-preset-icon">📝</div>
+                <div class="style-preset-label">Whiteboard</div>
               </div>
-            </div>
-            <div class="layout-opt">
-              <div class="layout-opt-inner">
-                <div class="layout-block" style="flex: 2;"></div>
-                <div class="layout-block" style="flex: 1;"></div>
+              <div class="style-preset" data-style="minimal">
+                <div class="style-preset-icon">◻️</div>
+                <div class="style-preset-label">Minimal</div>
+              </div>
+              <div class="style-preset" data-style="bold">
+                <div class="style-preset-icon">🎨</div>
+                <div class="style-preset-label">Bold</div>
+              </div>
+              <div class="style-preset" data-style="playful">
+                <div class="style-preset-icon">✏️</div>
+                <div class="style-preset-label">Playful</div>
               </div>
             </div>
           </div>
-        </div>
 
-        <!-- Icons -->
-        <div class="panel-section">
-          <div class="panel-section-label">Icons</div>
-          <div class="icon-grid">
-            <div class="icon-item active">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+          <div class="panel-section">
+            <div class="panel-section-label">Image Quality</div>
+            <div style="display:flex; gap:var(--space-2);">
+              <button class="quality-btn" style="flex:1; padding:var(--space-2); border:2px solid var(--color-border); border-radius:var(--radius-md); background:var(--color-background); font-family:var(--font-family); font-size:var(--font-size-xs); cursor:pointer; text-align:center; transition: all var(--transition-fast);">
+                <div style="font-weight:700;">Low</div>
+                <div style="color:var(--color-text-muted);">~$0.005</div>
+              </button>
+              <button class="quality-btn active-quality" style="flex:1; padding:var(--space-2); border:2px solid var(--color-primary); border-radius:var(--radius-md); background:var(--color-primary-50); font-family:var(--font-family); font-size:var(--font-size-xs); cursor:pointer; text-align:center; transition: all var(--transition-fast);">
+                <div style="font-weight:700; color:var(--color-primary);">Medium</div>
+                <div style="color:var(--color-primary);">~$0.041</div>
+              </button>
+              <button class="quality-btn" style="flex:1; padding:var(--space-2); border:2px solid var(--color-border); border-radius:var(--radius-md); background:var(--color-background); font-family:var(--font-family); font-size:var(--font-size-xs); cursor:pointer; text-align:center; transition: all var(--transition-fast);">
+                <div style="font-weight:700;">High</div>
+                <div style="color:var(--color-text-muted);">~$0.165</div>
+              </button>
             </div>
-            <div class="icon-item">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>
-            </div>
-            <div class="icon-item">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
-            </div>
-            <div class="icon-item">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
-            </div>
-            <div class="icon-item">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 20V10M12 20V4M6 20v-6"/></svg>
-            </div>
-            <div class="icon-item">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
-            </div>
+          </div>
+
+          <div class="panel-section">
+            <button class="regenerate-btn" id="designRegenBtn">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21.5 2v6h-6"/><path d="M2.5 22v-6h6"/><path d="M2.5 12a10 10 0 0 1 16.12-6.12L21.5 8"/><path d="M21.5 12a10 10 0 0 1-16.12 6.12L2.5 16"/></svg>
+              Regenerate Image
+            </button>
+            <p style="font-size:var(--font-size-xs); color:var(--color-text-muted); margin-top:var(--space-2); text-align:center;">
+              gpt-image-2 will render a new image from the prompt above.
+            </p>
           </div>
         </div>
 
-        <!-- Save -->
+        <!-- Save footer (shared) -->
         <div class="panel-footer">
-          <button class="save-btn">
+          <button class="save-btn" id="saveBtn">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
             Save Changes
           </button>
@@ -404,101 +443,211 @@
     </div>
   </div>
 <script>
-  const textarea = document.querySelector('.ai-prompt-area');
-  const applyBtn = document.querySelector('.apply-btn');
-  const saveBtn = document.querySelector('.save-btn');
-  const autosave = document.querySelector('.autosave');
+  // SVG infographic generator (same style as viewer)
+  function generateInfographicSVG(insight, index) {
+    const accent = insight.colors.accent;
+    const ideas = insight.supportingIdeas;
+    return `<svg viewBox="0 0 900 600" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:100%;display:block;">
+      <rect width="900" height="600" fill="#fff"/>
+      <rect x="20" y="20" width="860" height="560" rx="12" fill="none" stroke="#e2e8f0" stroke-width="2" stroke-dasharray="8 4"/>
+      <text x="60" y="75" font-family="Inter,system-ui,sans-serif" font-size="28" font-weight="800" fill="${accent}">${escapeXml(insight.mainIdea)}</text>
+      <line x1="60" y1="95" x2="400" y2="95" stroke="${accent}" stroke-width="3" stroke-linecap="round"/>
+      <circle cx="840" cy="55" r="22" fill="${accent}" opacity="0.1"/>
+      <text x="840" y="62" font-family="Inter,system-ui,sans-serif" font-size="18" font-weight="700" fill="${accent}" text-anchor="middle">${index + 1}</text>
+      <rect x="60" y="115" width="500" height="120" rx="8" fill="#f8fafc" stroke="#e2e8f0" stroke-width="1.5"/>
+      <text x="80" y="145" font-family="Inter,system-ui,sans-serif" font-size="13" fill="#475569">
+        ${wrapText(insight.summary, 70).map((line, i) => `<tspan x="80" dy="${i === 0 ? 0 : 18}">${escapeXml(line)}</tspan>`).join('')}
+      </text>
+      ${ideas.map((idea, i) => {
+        const y = 260 + i * 105;
+        const colors = ['#ef4444', '#22c55e', '#3b82f6', '#a855f7', '#f59e0b'];
+        const dotColor = colors[i % colors.length];
+        return `
+        <circle cx="80" cy="${y + 18}" r="8" fill="${dotColor}" opacity="0.2"/>
+        <circle cx="80" cy="${y + 18}" r="4" fill="${dotColor}"/>
+        <text x="100" y="${y + 24}" font-family="Inter,system-ui,sans-serif" font-size="15" font-weight="700" fill="#1e293b">${escapeXml(idea.idea)}</text>
+        <text x="100" y="${y + 46}" font-family="Inter,system-ui,sans-serif" font-size="11" fill="#64748b">
+          ${wrapText(idea.detail, 85).slice(0, 3).map((line, j) => `<tspan x="100" dy="${j === 0 ? 0 : 14}">${escapeXml(line)}</tspan>`).join('')}
+        </text>`;
+      }).join('')}
+      <rect x="600" y="115" width="240" height="460" rx="8" fill="${accent}" opacity="0.04"/>
+      <text x="620" y="150" font-family="Inter,system-ui,sans-serif" font-size="11" font-weight="700" fill="${accent}" letter-spacing="1">KEY INSIGHT</text>
+      <line x1="620" y1="160" x2="820" y2="160" stroke="${accent}" stroke-width="1" opacity="0.3"/>
+      <text x="620" y="185" font-family="Inter,system-ui,sans-serif" font-size="13" fill="#475569" font-weight="600">
+        ${wrapText(insight.summary.split('.')[0] + '.', 30).map((line, i) => `<tspan x="620" dy="${i === 0 ? 0 : 18}">${escapeXml(line)}</tspan>`).join('')}
+      </text>
+      <path d="M620 280 C650 260 700 260 720 290" fill="none" stroke="${accent}" stroke-width="2" stroke-dasharray="4 3"/>
+      <polygon points="718,285 725,295 715,293" fill="${accent}"/>
+      <text x="620" y="540" font-family="Inter,system-ui,sans-serif" font-size="10" fill="#94a3b8">Generated by SlideGen • gpt-image-2</text>
+    </svg>`;
+  }
 
-  // Prompt chips fill textarea
-  document.querySelectorAll('.prompt-chip').forEach(chip => {
+  function escapeXml(str) {
+    return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+  function wrapText(text, maxChars) {
+    const words = text.split(' ');
+    const lines = [];
+    let current = '';
+    for (const word of words) {
+      if ((current + ' ' + word).trim().length > maxChars) {
+        lines.push(current.trim());
+        current = word;
+      } else {
+        current += ' ' + word;
+      }
+    }
+    if (current.trim()) lines.push(current.trim());
+    return lines;
+  }
+
+  // Insight data (matching the viewer)
+  const insights = [
+    { mainIdea: "Avoid Made-Up Startup Ideas", summary: "The most common mistake founders make is trying to think up startup ideas rather than noticing problems they personally experience.", supportingIdeas: [{idea:"Organic vs. Manufactured Ideas",detail:"Ideas from personal frustration carry built-in conviction."},{idea:"The Schlep Blindness Problem",detail:"Many valuable problems go unsolved because founders avoid tedious work."},{idea:"Living in the Future",detail:"The best founders operate at the frontier of their field."}], colors:{bg:'#fff',accent:'#6366f1',title:'#1e293b'} },
+    { mainIdea: "Build a Deep Well, Not a Shallow Pool", summary: "Startups succeed by going extraordinarily deep on a narrow problem rather than spreading thin.", supportingIdeas: [{idea:"The Power of Narrow Focus",detail:"Every iconic startup started with a single use case executed at an elite level."},{idea:"Depth Creates Switching Costs",detail:"Deep domain understanding makes your product nearly impossible to displace."},{idea:"Expert Networks Form Around Depth",detail:"Deep expertise attracts the best talent and advisors."}], colors:{bg:'#fff',accent:'#14b8a6',title:'#1e293b'} },
+    { mainIdea: "AI Won't Replace Designers — It Will Amplify Them", summary: "The 2025 design landscape reveals that AI tools are augmenting human creativity rather than substituting it.", supportingIdeas: [{idea:"The 80/20 Split Is Real",detail:"AI handles 80% of production tasks freeing designers for the 20% that matters."},{idea:"New Design Roles Are Emerging",detail:"Roles like AI Design Director reflect a shift to creative orchestration."},{idea:"Quality Ceilings Still Need Humans",detail:"The leap from good to great still requires human taste and emotional intelligence."}], colors:{bg:'#fff',accent:'#f43f5e',title:'#1e293b'} },
+    { mainIdea: "Design Systems Are Becoming Living Organisms", summary: "Modern design systems have evolved beyond static component libraries into dynamic, self-updating ecosystems.", supportingIdeas: [{idea:"Auto-Generated Components",detail:"AI analyzes recurring UI patterns and proposes new reusable components."},{idea:"Usage Analytics Drive Evolution",detail:"Real-time tracking provides data-driven guidance for design system roadmaps."},{idea:"Cross-Platform Consistency",detail:"AI ensures design tokens remain consistent across web, mobile, and emerging platforms."}], colors:{bg:'#fff',accent:'#8b5cf6',title:'#1e293b'} },
+    { mainIdea: "The Prototype Is the Product", summary: "The boundary between prototyping and production has dissolved.", supportingIdeas: [{idea:"Zero-Handoff Workflows",detail:"Design-to-code tools produce output that passes engineering code review."},{idea:"Real Data in Prototypes",detail:"Modern prototypes connect to live APIs making user testing more realistic."},{idea:"Iteration Speed as Moat",detail:"Going from idea to production in hours is a fundamental competitive advantage."}], colors:{bg:'#fff',accent:'#f59e0b',title:'#1e293b'} },
+    { mainIdea: "Personalization at Scale Changes Everything", summary: "AI enables interfaces that adapt to individual users in real-time.", supportingIdeas: [{idea:"Behavioral Adaptation",detail:"Interfaces learn from individual interaction patterns."},{idea:"Context-Aware Layouts",detail:"The same app can present differently based on context and expertise level."},{idea:"Ethical Boundaries",detail:"Personalization requires careful guardrails to prevent dark patterns."}], colors:{bg:'#fff',accent:'#14b8a6',title:'#1e293b'} },
+    { mainIdea: "Voice and Gesture Are the Next Interface Frontier", summary: "As spatial computing matures, designers must think beyond screen-based interaction.", supportingIdeas: [{idea:"Spatial UI Patterns",detail:"Designing for 3D space requires new conventions for depth and proximity."},{idea:"Multimodal Input",detail:"The most effective interfaces combine voice, gesture, gaze, and touch."},{idea:"Accessibility-First Spatial Design",detail:"Spatial interfaces risk excluding users unless accessibility is built in."}], colors:{bg:'#fff',accent:'#6366f1',title:'#1e293b'} },
+    { mainIdea: "Data Visualization Is Becoming Conversational", summary: "Static charts are being replaced by interactive, AI-powered data conversations.", supportingIdeas: [{idea:"Natural Language to Charts",detail:"Users describe what they want to see and AI generates the optimal visualization."},{idea:"Narrative Data Storytelling",detail:"AI identifies patterns and constructs visual narratives."},{idea:"Real-Time Collaborative Analysis",detail:"Multiple stakeholders interact with the same visualization simultaneously."}], colors:{bg:'#fff',accent:'#f43f5e',title:'#1e293b'} },
+    { mainIdea: "Adoption by the Numbers", summary: "The quantitative evidence for AI design adoption is overwhelming. Tool adoption has grown 340% year-over-year, with 67% of design teams now using generative UI tools daily. Teams report 4.2x faster iteration cycles compared to traditional workflows.", supportingIdeas: [{idea:"340% Tool Adoption Growth",detail:"From niche experimentation to mainstream adoption, driven by productivity gains and falling costs."},{idea:"67% Daily Usage Rate",detail:"The majority of professional design teams have integrated AI tools into daily production workflows."},{idea:"4.2x Iteration Speed",detail:"Generate, test, and refine design variations in minutes rather than days."}], colors:{bg:'#fff',accent:'#8b5cf6',title:'#1e293b'} },
+    { mainIdea: "The Ethics of AI-Generated Design", summary: "As AI generates more of what users see, questions of originality, attribution, and bias become critical.", supportingIdeas: [{idea:"Training Data Provenance",detail:"Designers demand transparency about training datasets and creator compensation."},{idea:"Bias in Generated Outputs",detail:"AI tools can perpetuate and amplify existing biases."},{idea:"New IP Frameworks",detail:"Legal frameworks for AI-generated work are still being defined."}], colors:{bg:'#fff',accent:'#f59e0b',title:'#1e293b'} },
+    { mainIdea: "Collaborative AI Is the Future of Design Teams", summary: "The most productive design teams in 2025 treat AI as a team member rather than a tool.", supportingIdeas: [{idea:"AI as Design Critic",detail:"AI reviews designs against accessibility guidelines and brand standards."},{idea:"Brainstorm Amplification",detail:"AI generates dozens of conceptual variations during ideation sessions."},{idea:"Autonomous Routine Decisions",detail:"Spacing, alignment, and color contrast are increasingly handled by AI."}], colors:{bg:'#fff',accent:'#14b8a6',title:'#1e293b'} },
+    { mainIdea: "The Future Belongs to Design-Literate Engineers", summary: "The convergence of design and engineering means professionals who understand both have an outsized advantage.", supportingIdeas: [{idea:"Blurred Role Boundaries",detail:"Tools enable both roles to work in the same medium."},{idea:"Full-Stack Product Thinking",detail:"The most effective builders understand psychology, design, architecture, and business."},{idea:"New Educational Models",detail:"Schools offer hybrid programs combining interaction design with engineering."}], colors:{bg:'#fff',accent:'#6366f1',title:'#1e293b'} }
+  ];
+
+  let currentSlide = 3; // Start on slide 4 (index 3) — "Adoption by the Numbers" to match original
+  const infographic = document.getElementById('editInfographic');
+  const slideCounter = document.getElementById('slideCounter');
+  const editThumbs = document.getElementById('editThumbs');
+  const editingBadge = document.getElementById('editingBadgeText');
+
+  function renderEditSlide() {
+    const insight = insights[currentSlide];
+    infographic.innerHTML = generateInfographicSVG(insight, currentSlide);
+    slideCounter.textContent = `${currentSlide + 1} / ${insights.length}`;
+    editingBadge.textContent = `Editing insight ${currentSlide + 1}`;
+
+    // Update content tab fields
+    document.getElementById('editMainIdea').value = insight.mainIdea;
+    document.getElementById('editSummary').value = insight.summary;
+
+    // Thumbnails
+    editThumbs.innerHTML = insights.map((ins, i) => {
+      const accent = ins.colors.accent;
+      return `<div class="edit-thumb${i === currentSlide ? ' active' : ''}" data-i="${i}" style="position:relative;">
+        <div style="width:100%;height:100%;background:linear-gradient(135deg, ${accent}11, ${accent}22);display:flex;align-items:center;justify-content:center;">
+          <span style="font-size:8px;font-weight:700;color:${accent};">${i+1}</span>
+        </div>
+      </div>`;
+    }).join('');
+    editThumbs.querySelectorAll('.edit-thumb').forEach(t => {
+      t.addEventListener('click', () => { currentSlide = parseInt(t.dataset.i); renderEditSlide(); });
+    });
+  }
+
+  // Tab switching
+  document.querySelectorAll('.panel-tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      document.querySelectorAll('.panel-tab').forEach(t => t.classList.remove('active'));
+      document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+      tab.classList.add('active');
+      document.getElementById(tab.dataset.tab + 'Tab').classList.add('active');
+    });
+  });
+
+  // AI suggestion chips → fill design prompt textarea
+  document.querySelectorAll('.ai-chip').forEach(chip => {
     chip.addEventListener('click', () => {
-      textarea.value = chip.textContent;
-      textarea.focus();
+      const ta = document.getElementById('designPrompt');
+      ta.value += '\n\nStyle direction: ' + chip.textContent;
+      ta.focus();
     });
   });
 
-  // Apply with AI → loading animation then "applied"
-  applyBtn.addEventListener('click', () => {
-    applyBtn.innerHTML = '<svg class="animate-spin" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg> Applying...';
-    applyBtn.style.pointerEvents = 'none';
+  // Style presets
+  document.querySelectorAll('.style-preset').forEach(p => {
+    p.addEventListener('click', () => {
+      document.querySelectorAll('.style-preset').forEach(x => x.classList.remove('active'));
+      p.classList.add('active');
+    });
+  });
+
+  // Quality buttons
+  document.querySelectorAll('.quality-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.quality-btn').forEach(b => {
+        b.style.borderColor = 'var(--color-border)';
+        b.style.background = 'var(--color-background)';
+        b.querySelector('div').style.color = '';
+        b.querySelectorAll('div')[1].style.color = 'var(--color-text-muted)';
+      });
+      btn.style.borderColor = 'var(--color-primary)';
+      btn.style.background = 'var(--color-primary-50)';
+      btn.querySelector('div').style.color = 'var(--color-primary)';
+      btn.querySelectorAll('div')[1].style.color = 'var(--color-primary)';
+    });
+  });
+
+  // Version dots
+  document.querySelectorAll('.version-dot').forEach(d => {
+    d.addEventListener('click', () => {
+      document.querySelectorAll('.version-dot').forEach(x => x.classList.remove('active'));
+      d.classList.add('active');
+    });
+  });
+
+  // Regenerate buttons — simulate loading
+  function simulateRegenerate(btn) {
+    const originalHTML = btn.innerHTML;
+    btn.innerHTML = '<svg class="animate-spin" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg> Generating...';
+    btn.style.pointerEvents = 'none';
+    infographic.style.opacity = '0.5';
+
     setTimeout(() => {
-      applyBtn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Applied!';
-      applyBtn.style.background = '#22c55e';
-      autosave.innerHTML = '<span class="dot"></span> Unsaved changes';
-      autosave.querySelector('.dot').style.background = '#f59e0b';
+      infographic.style.opacity = '1';
+      btn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Done!';
+      btn.style.background = '#22c55e';
+      document.querySelector('.autosave').innerHTML = '<span class="dot" style="background:#f59e0b;"></span> Unsaved changes';
+
       setTimeout(() => {
-        applyBtn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg> Apply with AI';
-        applyBtn.style.background = '';
-        applyBtn.style.pointerEvents = '';
-        textarea.value = '';
-      }, 1500);
-    }, 1200);
-  });
+        btn.innerHTML = originalHTML;
+        btn.style.background = '';
+        btn.style.pointerEvents = '';
+      }, 1200);
+    }, 1500);
+  }
 
-  // Color theme swatches
-  document.querySelectorAll('.swatch').forEach(s => {
-    s.addEventListener('click', () => {
-      document.querySelectorAll('.swatch').forEach(x => x.classList.remove('active'));
-      s.classList.add('active');
-    });
-  });
+  document.getElementById('contentRegenBtn').addEventListener('click', function() { simulateRegenerate(this); });
+  document.getElementById('designRegenBtn').addEventListener('click', function() { simulateRegenerate(this); });
 
-  // Layout options
-  document.querySelectorAll('.layout-opt').forEach(opt => {
-    opt.addEventListener('click', () => {
-      document.querySelectorAll('.layout-opt').forEach(x => x.classList.remove('active'));
-      opt.classList.add('active');
-    });
+  // Nav
+  document.getElementById('prevBtn').addEventListener('click', () => {
+    currentSlide = (currentSlide - 1 + insights.length) % insights.length;
+    renderEditSlide();
   });
-
-  // Icon picker
-  document.querySelectorAll('.icon-item').forEach(icon => {
-    icon.addEventListener('click', () => {
-      document.querySelectorAll('.icon-item').forEach(x => x.classList.remove('active'));
-      icon.classList.add('active');
-    });
+  document.getElementById('nextBtn').addEventListener('click', () => {
+    currentSlide = (currentSlide + 1) % insights.length;
+    renderEditSlide();
   });
 
   // Save → go to viewer
-  saveBtn.addEventListener('click', () => {
-    saveBtn.innerHTML = '<svg class="animate-spin" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg> Saving...';
+  document.getElementById('saveBtn').addEventListener('click', function() {
+    this.innerHTML = '<svg class="animate-spin" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg> Saving...';
     setTimeout(() => {
-      saveBtn.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Saved!';
-      saveBtn.style.background = '#22c55e';
+      this.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Saved!';
+      this.style.background = '#22c55e';
       setTimeout(() => { window.location.href = 'screen3-viewer.html'; }, 800);
     }, 600);
   });
 
   // Back → Viewer
-  document.querySelector('.edit-back').addEventListener('click', () => {
-    window.location.href = 'screen3-viewer.html';
-  });
-
+  document.querySelector('.edit-back').addEventListener('click', () => { window.location.href = 'screen3-viewer.html'; });
   // Publish → Share
-  document.querySelectorAll('.btn-accent').forEach(b => {
-    if (b.textContent.includes('Publish')) b.addEventListener('click', () => { window.location.href = 'screen4-share.html'; });
-  });
+  document.querySelector('.publish-btn').addEventListener('click', () => { window.location.href = 'screen4-share.html'; });
 
-  // Slide nav
-  let editSlide = 3;
-  const slideCounter = document.querySelector('.edit-slide-counter');
-  document.querySelectorAll('.edit-nav-btn').forEach((btn, i) => {
-    btn.addEventListener('click', () => {
-      editSlide = i === 0 ? Math.max(1, editSlide - 1) : Math.min(12, editSlide + 1);
-      slideCounter.textContent = `${editSlide} / 12`;
-      document.querySelector('.editing-badge').lastChild.textContent = ` Editing slide ${editSlide}`;
-    });
-  });
-
-  // Thumbnail click
-  document.querySelectorAll('.edit-thumb').forEach((t, i) => {
-    t.addEventListener('click', () => {
-      document.querySelectorAll('.edit-thumb').forEach(x => x.classList.remove('active'));
-      t.classList.add('active');
-      editSlide = i + 1;
-      slideCounter.textContent = `${editSlide} / 12`;
-    });
-  });
+  renderEditSlide();
 </script>
 </body>
 </html>

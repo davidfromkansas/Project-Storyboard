@@ -39,7 +39,7 @@
     /* Progress Steps */
     .progress-steps {
       display: flex; flex-direction: column; gap: var(--space-5);
-      margin-bottom: var(--space-10); min-width: 300px;
+      margin-bottom: var(--space-10); min-width: 380px;
     }
     .step {
       display: flex; align-items: center; gap: var(--space-4);
@@ -55,19 +55,14 @@
     .step-content { flex: 1; }
     .step-label { font-weight: 600; font-size: var(--font-size-base); }
     .step-detail { font-size: var(--font-size-sm); color: var(--color-text-muted); margin-top: 2px; }
+    .step-sublabel { font-size: var(--font-size-xs); color: var(--color-text-muted); font-weight: 400; margin-left: var(--space-1); }
 
     /* Step states */
-    .step-complete {
-      background: #f0fdf4;
-    }
-    .step-complete .step-icon {
-      background: var(--color-success); color: #fff;
-    }
+    .step-complete { background: #f0fdf4; }
+    .step-complete .step-icon { background: var(--color-success); color: #fff; }
     .step-complete .step-label { color: #16a34a; }
 
-    .step-active {
-      background: var(--color-primary-50);
-    }
+    .step-active { background: var(--color-primary-50); }
     .step-active .step-icon {
       background: var(--color-primary); color: #fff;
       animation: pulse 2s ease-in-out infinite;
@@ -79,6 +74,20 @@
       border: 2px solid var(--color-border);
     }
     .step-pending .step-label { color: var(--color-text-muted); }
+
+    /* Image progress */
+    .image-progress {
+      display: flex; gap: 6px; margin-top: var(--space-2); flex-wrap: wrap;
+    }
+    .image-dot {
+      width: 10px; height: 10px; border-radius: 50%;
+      background: var(--color-border); transition: all 0.3s ease;
+    }
+    .image-dot.generating {
+      background: var(--color-primary);
+      animation: pulse 1.5s ease-in-out infinite;
+    }
+    .image-dot.done { background: var(--color-success); }
 
     /* Timer */
     .timer {
@@ -116,10 +125,7 @@
     }
     .cancel-btn:hover { background: var(--color-border-light); color: var(--color-text-secondary); }
 
-    /* Overall progress bar */
-    .overall-progress {
-      width: 300px; margin-bottom: var(--space-3);
-    }
+    .overall-progress { width: 380px; margin-bottom: var(--space-3); }
   </style>
 </head>
 <body>
@@ -140,43 +146,44 @@
 
     <!-- Steps -->
     <div class="progress-steps">
-      <div class="step step-complete animate-fade-in">
+      <div class="step step-complete animate-fade-in" id="step0">
         <div class="step-icon">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
         </div>
         <div class="step-content">
-          <div class="step-label">Extracting content</div>
-          <div class="step-detail">Found 2,340 words and 5 images</div>
+          <div class="step-label">Extracting content <span class="step-sublabel">via Exa.ai</span></div>
+          <div class="step-detail">Found 3,200 words from blog.example.com</div>
         </div>
       </div>
 
-      <div class="step step-active animate-fade-in-delay-1">
+      <div class="step step-active animate-fade-in-delay-1" id="step1">
         <div class="step-icon">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>
         </div>
         <div class="step-content">
-          <div class="step-label">Analyzing key points</div>
-          <div class="step-detail">Identifying themes and structure...</div>
+          <div class="step-label">Analyzing key insights <span class="step-sublabel">via GPT-5.5</span></div>
+          <div class="step-detail">Synthesizing themes and frameworks...</div>
         </div>
       </div>
 
-      <div class="step step-pending animate-fade-in-delay-2">
+      <div class="step step-pending animate-fade-in-delay-2" id="step2">
         <div class="step-icon">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/></svg>
         </div>
         <div class="step-content">
-          <div class="step-label">Generating slides</div>
-          <div class="step-detail">Creating visual layouts</div>
+          <div class="step-label">Generating infographics <span class="step-sublabel">via gpt-image-2</span></div>
+          <div class="step-detail">Waiting...</div>
+          <div class="image-progress" id="imageDots"></div>
         </div>
       </div>
 
-      <div class="step step-pending animate-fade-in-delay-3">
+      <div class="step step-pending animate-fade-in-delay-3" id="step3">
         <div class="step-icon">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/></svg>
         </div>
         <div class="step-content">
-          <div class="step-label">Applying design</div>
-          <div class="step-detail">Polishing and formatting</div>
+          <div class="step-label">Finalizing deck</div>
+          <div class="step-detail">Saving to gallery</div>
         </div>
       </div>
     </div>
@@ -184,14 +191,14 @@
     <!-- Progress bar -->
     <div class="overall-progress animate-fade-in-delay-2">
       <div class="progress-bar">
-        <div class="progress-bar-fill" style="width: 45%;"></div>
+        <div class="progress-bar-fill" style="width: 25%;"></div>
       </div>
     </div>
 
     <!-- Timer -->
     <div class="timer animate-fade-in-delay-2">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-      About 20 seconds remaining
+      About 30 seconds remaining
     </div>
 
     <!-- Cancel -->
@@ -201,6 +208,8 @@
   const steps = document.querySelectorAll('.step');
   const progressFill = document.querySelector('.progress-bar-fill');
   const timer = document.querySelector('.timer');
+  const imageDots = document.getElementById('imageDots');
+  const totalImages = 12;
   const checkSvg = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>';
   const spinSvg = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>';
 
@@ -213,41 +222,61 @@
     steps[i].querySelector('.step-icon').innerHTML = spinSvg;
   }
 
-  const details = [
-    'Found 2,340 words and 5 images',
-    'Identified 4 key themes',
-    'Created 12 slide layouts',
-    'Applied indigo theme with icons'
-  ];
+  // Build image dots
+  for (let i = 0; i < totalImages; i++) {
+    const dot = document.createElement('div');
+    dot.className = 'image-dot';
+    imageDots.appendChild(dot);
+  }
+  const dots = imageDots.querySelectorAll('.image-dot');
 
-  // Step 1 already complete, step 2 active
-  // After 1.5s: complete step 2, activate step 3
+  // Step 1 complete, step 2 active already set in HTML
+  // After 2s: complete step 2 (insights), activate step 3 (images)
   setTimeout(() => {
     completeStep(1);
-    steps[1].querySelector('.step-detail').textContent = details[1];
+    steps[1].querySelector('.step-detail').textContent = 'Found 12 key insights with supporting ideas';
     activateStep(2);
-    progressFill.style.width = '60%';
-    timer.lastChild.textContent = ' About 12 seconds remaining';
-  }, 1500);
+    steps[2].querySelector('.step-detail').textContent = 'Generating infographic 1 of ' + totalImages + '...';
+    progressFill.style.width = '35%';
+    timer.lastChild.textContent = ' About 25 seconds remaining';
+  }, 2000);
 
-  // After 3s: complete step 3, activate step 4
-  setTimeout(() => {
-    completeStep(2);
-    steps[2].querySelector('.step-detail').textContent = details[2];
-    activateStep(3);
-    progressFill.style.width = '80%';
-    timer.lastChild.textContent = ' About 5 seconds remaining';
-  }, 3000);
+  // Simulate image generation — one dot every 400ms starting at 2.5s
+  let imgIndex = 0;
+  function generateNextImage() {
+    if (imgIndex >= totalImages) return;
+    const current = imgIndex;
+    dots[current].className = 'image-dot generating';
+    steps[2].querySelector('.step-detail').textContent = 'Generating infographic ' + (current + 1) + ' of ' + totalImages + '...';
+    const pct = 35 + ((current + 1) / totalImages) * 50;
+    progressFill.style.width = pct + '%';
+    const remaining = Math.max(2, Math.round(25 - (current / totalImages) * 25));
+    timer.lastChild.textContent = ' About ' + remaining + ' seconds remaining';
 
-  // After 4.5s: complete step 4, navigate to viewer
-  setTimeout(() => {
-    completeStep(3);
-    steps[3].querySelector('.step-detail').textContent = details[3];
-    progressFill.style.width = '100%';
-    timer.lastChild.textContent = ' Done!';
-  }, 4500);
+    setTimeout(() => {
+      dots[current].className = 'image-dot done';
+      imgIndex++;
+      if (imgIndex < totalImages) {
+        generateNextImage();
+      } else {
+        // All images done, finalize
+        completeStep(2);
+        steps[2].querySelector('.step-detail').textContent = 'Generated ' + totalImages + ' infographic slides';
+        activateStep(3);
+        progressFill.style.width = '90%';
+        timer.lastChild.textContent = ' Almost done...';
+        setTimeout(() => {
+          completeStep(3);
+          steps[3].querySelector('.step-detail').textContent = 'Deck saved successfully';
+          progressFill.style.width = '100%';
+          timer.lastChild.textContent = ' Complete!';
+          setTimeout(() => { window.location.href = 'screen3-viewer.html'; }, 800);
+        }, 800);
+      }
+    }, 350);
+  }
 
-  setTimeout(() => { window.location.href = 'screen3-viewer.html'; }, 5500);
+  setTimeout(() => { generateNextImage(); }, 2500);
 
   // Cancel → back to landing
   document.querySelector('.cancel-btn').addEventListener('click', () => {
