@@ -61,37 +61,28 @@ function GeneratePageInner() {
   const router = useRouter();
   const url = searchParams.get("url");
   const [progress, setProgress] = useState<Progress>({ step: "extracting" });
-  const [funMessage, setFunMessage] = useState("");
+  const [messageIndex, setMessageIndex] = useState(0);
   const started = useRef(false);
-  const messageInterval = useRef<NodeJS.Timeout | null>(null);
+
+  function getMessagesForStep(step: string) {
+    switch (step) {
+      case "extracting": return FUN_MESSAGES_EXTRACTING;
+      case "analyzing": return FUN_MESSAGES_ANALYZING;
+      case "generating_images": return FUN_MESSAGES_GENERATING;
+      default: return [];
+    }
+  }
+
+  const messages = getMessagesForStep(progress.step);
+  const funMessage = messages.length > 0 ? messages[messageIndex % messages.length] : "";
 
   useEffect(() => {
-    function getMessagesForStep(step: string) {
-      switch (step) {
-        case "extracting": return FUN_MESSAGES_EXTRACTING;
-        case "analyzing": return FUN_MESSAGES_ANALYZING;
-        case "generating_images": return FUN_MESSAGES_GENERATING;
-        default: return [];
-      }
-    }
-
-    const messages = getMessagesForStep(progress.step);
-    if (messages.length === 0) {
-      if (messageInterval.current) clearInterval(messageInterval.current);
-      setFunMessage("");
-      return;
-    }
-
-    setFunMessage(messages[Math.floor(Math.random() * messages.length)]);
-    if (messageInterval.current) clearInterval(messageInterval.current);
-    messageInterval.current = setInterval(() => {
-      setFunMessage(messages[Math.floor(Math.random() * messages.length)]);
+    if (messages.length === 0) return;
+    const interval = setInterval(() => {
+      setMessageIndex((i) => i + 1);
     }, 3000);
-
-    return () => {
-      if (messageInterval.current) clearInterval(messageInterval.current);
-    };
-  }, [progress.step]);
+    return () => clearInterval(interval);
+  }, [progress.step, messages.length]);
 
   useEffect(() => {
     if (!url || started.current) return;
