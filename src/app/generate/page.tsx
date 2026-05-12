@@ -19,6 +19,35 @@ const STEP_LABELS: Record<string, string> = {
   failed: "Generation failed",
 };
 
+const FUN_MESSAGES_EXTRACTING = [
+  "Reading the article carefully...",
+  "Highlighting the good parts...",
+  "Skimming for insights...",
+  "Digesting the content...",
+];
+
+const FUN_MESSAGES_ANALYZING = [
+  "Finding the aha moments...",
+  "Connecting the dots...",
+  "Distilling wisdom...",
+  "Thinking like a professor...",
+  "Identifying key patterns...",
+  "Synthesizing the big ideas...",
+];
+
+const FUN_MESSAGES_GENERATING = [
+  "Teaching the AI to draw...",
+  "Sketching on the whiteboard...",
+  "Adding stick figures...",
+  "Drawing arrows and diagrams...",
+  "Picking the perfect colors...",
+  "Making abstract ideas visual...",
+  "Doodling supporting ideas...",
+  "Adding the finishing touches...",
+  "Creating visual metaphors...",
+  "Whiteboarding the concepts...",
+];
+
 export default function GeneratePage() {
   return (
     <Suspense fallback={<div className="min-h-screen bg-[#f8fafc] flex items-center justify-center"><p className="text-[#64748b]">Loading...</p></div>}>
@@ -32,7 +61,37 @@ function GeneratePageInner() {
   const router = useRouter();
   const url = searchParams.get("url");
   const [progress, setProgress] = useState<Progress>({ step: "extracting" });
+  const [funMessage, setFunMessage] = useState("");
   const started = useRef(false);
+  const messageInterval = useRef<NodeJS.Timeout | null>(null);
+
+  useEffect(() => {
+    function getMessagesForStep(step: string) {
+      switch (step) {
+        case "extracting": return FUN_MESSAGES_EXTRACTING;
+        case "analyzing": return FUN_MESSAGES_ANALYZING;
+        case "generating_images": return FUN_MESSAGES_GENERATING;
+        default: return [];
+      }
+    }
+
+    const messages = getMessagesForStep(progress.step);
+    if (messages.length === 0) {
+      if (messageInterval.current) clearInterval(messageInterval.current);
+      setFunMessage("");
+      return;
+    }
+
+    setFunMessage(messages[Math.floor(Math.random() * messages.length)]);
+    if (messageInterval.current) clearInterval(messageInterval.current);
+    messageInterval.current = setInterval(() => {
+      setFunMessage(messages[Math.floor(Math.random() * messages.length)]);
+    }, 3000);
+
+    return () => {
+      if (messageInterval.current) clearInterval(messageInterval.current);
+    };
+  }, [progress.step]);
 
   useEffect(() => {
     if (!url || started.current) return;
@@ -117,19 +176,28 @@ function GeneratePageInner() {
           {progress.step !== "failed" && (
             <>
               {/* Progress bar */}
-              <div className="w-full bg-[#e2e8f0] rounded-full h-2">
+              <div className="w-full bg-[#e2e8f0] rounded-full h-3 overflow-hidden">
                 <div
-                  className="bg-[#6366f1] h-2 rounded-full transition-all duration-500"
+                  className="bg-gradient-to-r from-[#6366f1] to-[#8b5cf6] h-3 rounded-full transition-all duration-700 ease-out relative"
                   style={{ width: `${progressPercent}%` }}
-                />
+                >
+                  <div className="absolute inset-0 bg-white/20 animate-pulse" />
+                </div>
               </div>
 
               {/* Step indicator */}
-              <p className="text-[#64748b] text-lg">
+              <p className="text-[#1e293b] text-lg font-medium">
                 {progress.step === "generating_images" && progress.current && progress.total
-                  ? `Generating infographic ${progress.current} of ${progress.total}...`
+                  ? `Generating infographic ${progress.current} of ${progress.total}`
                   : STEP_LABELS[progress.step] || "Processing..."}
               </p>
+
+              {/* Fun rotating message */}
+              {funMessage && (
+                <p className="text-[#64748b] text-sm italic transition-opacity duration-500">
+                  {funMessage}
+                </p>
+              )}
 
               {/* Steps list */}
               <div className="mt-6 text-left space-y-3">
