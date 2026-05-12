@@ -32,7 +32,6 @@ export function LandingPage({ user }: LandingPageProps) {
   const handleGenerate = async () => {
     if (!url.trim()) return;
     setIsGenerating(true);
-    // TODO: Call /api/generate and redirect to loading screen
     window.location.href = `/generate?url=${encodeURIComponent(url.trim())}`;
   };
 
