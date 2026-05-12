@@ -2,7 +2,27 @@ import { extractArticleContent } from "./exa";
 import { openai } from "./openai";
 import { prisma } from "./prisma";
 import { INSIGHT_EXTRACTION_PROMPT } from "./prompts";
-import pLimit from "p-limit";
+
+function createLimiter(concurrency: number) {
+  let active = 0;
+  const queue: Array<() => void> = [];
+  return <T>(fn: () => Promise<T>): Promise<T> => {
+    return new Promise<T>((resolve, reject) => {
+      const run = () => {
+        active++;
+        fn()
+          .then(resolve)
+          .catch(reject)
+          .finally(() => {
+            active--;
+            if (queue.length > 0) queue.shift()!();
+          });
+      };
+      if (active < concurrency) run();
+      else queue.push(run);
+    });
+  };
+}
 
 export interface PipelineProgress {
   step: "extracting" | "analyzing" | "generating_images" | "complete" | "failed";
@@ -156,7 +176,7 @@ export async function runPipeline(
       orderBy: { position: "asc" },
     });
 
-    const limit = pLimit(3); // 3 concurrent image generations
+    const limit = createLimiter(3);
     let completed = 0;
 
     await Promise.all(
