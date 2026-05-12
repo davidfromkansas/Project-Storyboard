@@ -77,12 +77,17 @@ The infographic prompt MUST:
 - Small stick figure characters expressing frustration, confusion, or excitement.
 - Underlines, circles, stars, boxes, and other simple callouts.
 
-### The Prompt Must Describe
-- What should be visualized (concrete elements, not vague directions).
-- How the composition should work (layout, spatial relationships).
-- What symbolic elements reinforce the conceptual ideas.
-- What the title, thesis, examples, and takeaway should communicate.
-- How to use humor or intellectual satire when appropriate.
+### The Prompt Must Describe (IN DETAIL)
+- Explicit composition and spatial layout ("In the center, draw a giant funnel labeled X flowing from A -> B -> C")
+- Specific visual elements for EACH side/section with itemized details
+- Color coding instructions ("Use red for X, green for Y, blue for Z, purple for W")
+- Exact text for title, subtitle, labels, and takeaway box
+- Specific characters/figures and what they're doing ("tiny stick figures holding magnifying glasses inspecting datasets")
+- Before vs. after or bad vs. good with specific items listed on each side
+
+### Example of a GOOD Infographic Prompt (this level of detail is REQUIRED)
+
+"Create a minimalist whiteboard-style educational infographic slide titled 'Data Quality Is the New Bottleneck.' Use a landscape composition on a white background with hand-drawn marker aesthetics. In the center, draw a giant funnel labeled 'AI Training Pipeline' flowing from Data -> Training -> Models -> Deployment. Show cheap-looking low-quality datasets entering one side of the funnel in red and causing explosions, wasted GPUs, confused researchers, and broken charts downstream. On the green side, show rigorously QC'd datasets entering cleanly and producing reliable model improvements. Add tiny stick figures representing procurement teams holding magnifying glasses inspecting datasets. Include a bottom takeaway box in blue: 'Labs are no longer buying data. They are buying trustworthy capability improvement.' Use sparse accent colors: red for failure modes, green for trusted QC, blue for insights, purple for scaling outcomes."
 
 ### Quality Checklist
 - Minimalist whiteboard teaching style
@@ -94,8 +99,11 @@ The infographic prompt MUST:
 - Every supporting idea has a visual representation
 - Landscape orientation (1536x1024)
 - No generic "draw a chart about X" directions
+- MUST be 600-1000 characters long (detailed enough for faithful image generation)
+- MUST include explicit layout, color, and composition instructions
 
 ### Anti-Patterns (NEVER do these)
+- Short vague prompts under 500 characters
 - Generic prompts that could apply to any topic
 - Literal illustrations ("draw a person at a computer")
 - Only restating the title visually
@@ -103,9 +111,11 @@ The infographic prompt MUST:
 - Corporate consulting-slide aesthetics
 - Gradients, glossy UI, stock imagery
 - Prompts that ignore the supporting ideas
+- Prompts without explicit spatial/layout instructions
 
 ## Important
-- The infographic prompt must be >200 characters (detailed enough for good image generation).
+- The infographic prompt MUST be 600-1000 characters (this is critical — short prompts produce generic images).
+- Every prompt must include: explicit title text, spatial layout, color coding, specific visual elements, and a takeaway box.
 - Return ONLY valid JSON. No markdown code blocks, no explanation outside the JSON.`;
 
 export const REGENERATION_PROMPT = `You are an expert visual storytelling assistant specializing in educational infographic design.
