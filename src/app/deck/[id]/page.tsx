@@ -30,6 +30,7 @@ export default function DeckViewer() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showDetails, setShowDetails] = useState(false);
+  const [showPrompt, setShowPrompt] = useState(false);
 
   useEffect(() => {
     async function fetchDeck() {
@@ -162,6 +163,26 @@ export default function DeckViewer() {
                   </div>
                 ))}
               </div>
+            )}
+
+            {/* Infographic Prompt (collapsible) */}
+            {slide?.infographicPrompt && (
+              <>
+                <button
+                  onClick={() => setShowPrompt(!showPrompt)}
+                  className="text-sm text-[#8b5cf6] hover:underline"
+                >
+                  {showPrompt ? "Hide" : "Show"} infographic prompt
+                </button>
+
+                {showPrompt && (
+                  <div className="pt-2 border-t border-[#e2e8f0]">
+                    <pre className="text-xs text-[#64748b] whitespace-pre-wrap font-mono bg-[#f1f5f9] rounded-lg p-3 max-h-48 overflow-y-auto">
+                      {slide.infographicPrompt}
+                    </pre>
+                  </div>
+                )}
+              </>
             )}
           </div>
 
