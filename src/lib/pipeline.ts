@@ -176,7 +176,7 @@ export async function runPipeline(
       orderBy: { position: "asc" },
     });
 
-    const limit = createLimiter(3);
+    const limit = createLimiter(8);
     let completed = 0;
 
     await Promise.all(
