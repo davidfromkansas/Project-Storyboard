@@ -184,7 +184,7 @@ export async function runPipeline(
         limit(async () => {
           try {
             const image = await openai.images.generate({
-              model: "gpt-image-1",
+              model: "gpt-image-2",
               prompt: slide.infographicPrompt,
               n: 1,
               size: "1536x1024",
