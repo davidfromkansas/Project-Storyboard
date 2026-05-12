@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>URL-to-Infographic — Design System</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+  <style>
+    .index-hero {
+      padding: var(--space-24) 0;
+      text-align: center;
+    }
+    .index-hero h1 {
+      font-size: var(--font-size-5xl);
+      font-weight: 800;
+      letter-spacing: -0.025em;
+      margin-bottom: var(--space-4);
+      background: linear-gradient(135deg, var(--color-primary), var(--color-secondary));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .index-hero p {
+      font-size: var(--font-size-xl);
+      color: var(--color-text-secondary);
+      max-width: 600px;
+      margin: 0 auto var(--space-12);
+    }
+    .screen-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+      gap: var(--space-6);
+      padding-bottom: var(--space-24);
+    }
+    .screen-card {
+      background: var(--color-surface);
+      border-radius: var(--radius-xl);
+      border: 1px solid var(--color-border);
+      overflow: hidden;
+      transition: all var(--transition-base);
+      text-decoration: none;
+      color: inherit;
+    }
+    .screen-card:hover {
+      box-shadow: var(--shadow-xl);
+      transform: translateY(-4px);
+      border-color: var(--color-primary);
+    }
+    .screen-card-preview {
+      height: 200px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 3rem;
+    }
+    .screen-card-body {
+      padding: var(--space-5) var(--space-6);
+      border-top: 1px solid var(--color-border);
+    }
+    .screen-card-body h3 {
+      font-size: var(--font-size-lg);
+      font-weight: 700;
+      margin-bottom: var(--space-1);
+    }
+    .screen-card-body p {
+      font-size: var(--font-size-sm);
+      color: var(--color-text-secondary);
+    }
+    .screen-card:nth-child(1) .screen-card-preview { background: linear-gradient(135deg, #eef2ff, #e0e7ff); }
+    .screen-card:nth-child(2) .screen-card-preview { background: linear-gradient(135deg, #f0fdf4, #dcfce7); }
+    .screen-card:nth-child(3) .screen-card-preview { background: linear-gradient(135deg, #fef3c7, #fde68a); }
+    .screen-card:nth-child(4) .screen-card-preview { background: linear-gradient(135deg, #ffe4e6, #fecdd3); }
+    .screen-card:nth-child(5) .screen-card-preview { background: linear-gradient(135deg, #e0f2fe, #bae6fd); }
+    .screen-card:nth-child(6) .screen-card-preview { background: linear-gradient(135deg, #f3e8ff, #e9d5ff); }
+  </style>
+</head>
+<body>
+  <div class="screen">
+    <div class="container">
+      <div class="index-hero animate-fade-in">
+        <h1>URL-to-Infographic</h1>
+        <p>High-fidelity design mockups for a web app that turns any article into visual slides. 5 screens + design system.</p>
+      </div>
+      <div class="screen-grid">
+        <a href="screen1-landing.html" class="screen-card animate-fade-in">
+          <div class="screen-card-preview">🏠</div>
+          <div class="screen-card-body">
+            <h3>Screen 1: Landing Page</h3>
+            <p>URL input hero section with CTA and example chips</p>
+          </div>
+        </a>
+        <a href="screen2-loading.html" class="screen-card animate-fade-in-delay-1">
+          <div class="screen-card-preview">⏳</div>
+          <div class="screen-card-body">
+            <h3>Screen 2: Loading State</h3>
+            <p>Progress steps with animated spinner</p>
+          </div>
+        </a>
+        <a href="screen3-viewer.html" class="screen-card animate-fade-in-delay-1">
+          <div class="screen-card-preview">📊</div>
+          <div class="screen-card-body">
+            <h3>Screen 3: Slide Viewer</h3>
+            <p>Full-screen slide display with navigation controls</p>
+          </div>
+        </a>
+        <a href="screen4-share.html" class="screen-card animate-fade-in-delay-2">
+          <div class="screen-card-preview">🔗</div>
+          <div class="screen-card-body">
+            <h3>Screen 4: Share Mode</h3>
+            <p>Read-only presentation with share modal</p>
+          </div>
+        </a>
+        <a href="screen5-edit.html" class="screen-card animate-fade-in-delay-2">
+          <div class="screen-card-preview">✏️</div>
+          <div class="screen-card-body">
+            <h3>Screen 5: Edit Mode</h3>
+            <p>Split view with AI-powered editing panel</p>
+          </div>
+        </a>
+        <a href="design-system.html" class="screen-card animate-fade-in-delay-3">
+          <div class="screen-card-preview">🎨</div>
+          <div class="screen-card-body">
+            <h3>Design System</h3>
+            <p>Colors, typography, spacing, components & tokens</p>
+          </div>
+        </a>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

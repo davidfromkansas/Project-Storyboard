@@ -1,0 +1,504 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Edit Mode — URL-to-Infographic</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+  <style>
+    .edit-screen { min-height: 100vh; display: flex; flex-direction: column; background: var(--color-background); }
+
+    /* Top bar */
+    .edit-topbar {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: var(--space-3) var(--space-6);
+      background: var(--color-surface); border-bottom: 1px solid var(--color-border);
+      z-index: 10;
+    }
+    .edit-topbar-left { display: flex; align-items: center; gap: var(--space-4); }
+    .edit-back {
+      display: flex; align-items: center; gap: var(--space-2);
+      background: none; border: none; cursor: pointer; color: var(--color-text-secondary);
+      font-family: var(--font-family); font-size: var(--font-size-sm); font-weight: 500;
+      padding: var(--space-2) var(--space-3); border-radius: var(--radius-md);
+      transition: all var(--transition-fast);
+    }
+    .edit-back:hover { background: var(--color-background); color: var(--color-text); }
+    .edit-title { font-weight: 700; font-size: var(--font-size-base); }
+    .edit-topbar-right { display: flex; align-items: center; gap: var(--space-3); }
+    .autosave { font-size: var(--font-size-xs); color: var(--color-text-muted); display: flex; align-items: center; gap: var(--space-1); }
+    .autosave .dot { width: 6px; height: 6px; background: var(--color-success); border-radius: 50%; }
+
+    /* Split layout */
+    .edit-body { flex: 1; display: flex; overflow: hidden; }
+
+    /* Left: slide preview */
+    .edit-preview {
+      flex: 1; display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      padding: var(--space-8); position: relative;
+      background: var(--color-background);
+    }
+    .edit-slide-container {
+      max-width: 640px; width: 100%; aspect-ratio: 16 / 10;
+      border-radius: var(--radius-lg); overflow: hidden;
+      box-shadow: var(--shadow-lg); position: relative;
+      border: 2px solid var(--color-primary);
+    }
+    .edit-slide-inner {
+      display: flex; flex-direction: column; justify-content: center;
+      height: 100%; padding: var(--space-8) var(--space-10);
+      background: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%);
+    }
+    .edit-slide-inner h3 {
+      font-size: var(--font-size-xl); font-weight: 800;
+      margin-bottom: var(--space-6); color: var(--color-text);
+    }
+    .edit-stat-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--space-3); }
+    .edit-stat {
+      background: var(--color-surface); border-radius: var(--radius-md);
+      padding: var(--space-4); text-align: center; border: 1px solid var(--color-border);
+    }
+    .edit-stat-value {
+      font-size: var(--font-size-3xl); font-weight: 800; color: var(--color-primary); line-height: 1.1;
+    }
+    .edit-stat-label {
+      font-size: var(--font-size-xs); color: var(--color-text-secondary); margin-top: var(--space-1);
+    }
+    .edit-stat-bar { height: 4px; background: var(--color-border-light); border-radius: 2px; margin-top: var(--space-2); overflow: hidden; }
+    .edit-stat-bar-fill { height: 100%; border-radius: 2px; }
+
+    /* Editing indicator */
+    .editing-badge {
+      position: absolute; top: -12px; left: 50%; transform: translateX(-50%);
+      display: flex; align-items: center; gap: var(--space-2);
+      padding: var(--space-1) var(--space-3);
+      background: var(--color-primary); color: #fff;
+      border-radius: var(--radius-full); font-size: var(--font-size-xs); font-weight: 600;
+      white-space: nowrap;
+    }
+
+    /* Slide nav in preview */
+    .edit-slide-nav {
+      display: flex; align-items: center; gap: var(--space-3); margin-top: var(--space-6);
+    }
+    .edit-nav-btn {
+      width: 36px; height: 36px; border-radius: 50%;
+      background: var(--color-surface); border: 1px solid var(--color-border);
+      cursor: pointer; display: flex; align-items: center; justify-content: center;
+      color: var(--color-text-secondary); transition: all var(--transition-fast);
+    }
+    .edit-nav-btn:hover { background: var(--color-background); border-color: var(--color-text-muted); }
+    .edit-slide-counter { font-size: var(--font-size-sm); font-weight: 600; color: var(--color-text-secondary); }
+
+    /* Thumbnail strip */
+    .edit-thumbs {
+      display: flex; gap: var(--space-2); margin-top: var(--space-4);
+    }
+    .edit-thumb {
+      width: 56px; height: 35px; border-radius: var(--radius-sm);
+      border: 2px solid transparent; cursor: pointer; flex-shrink: 0;
+      transition: all var(--transition-fast); overflow: hidden;
+    }
+    .edit-thumb.active { border-color: var(--color-primary); }
+    .edit-thumb:hover { border-color: var(--color-text-muted); }
+    .edit-thumb-inner {
+      width: 100%; height: 100%; border-radius: 2px;
+    }
+
+    /* Right: editing panel */
+    .edit-panel {
+      width: 380px; background: var(--color-surface);
+      border-left: 1px solid var(--color-border);
+      display: flex; flex-direction: column;
+      overflow-y: auto;
+    }
+    .panel-header {
+      padding: var(--space-5) var(--space-6);
+      border-bottom: 1px solid var(--color-border);
+    }
+    .panel-header h3 {
+      font-size: var(--font-size-lg); font-weight: 700; margin-bottom: var(--space-1);
+    }
+    .panel-header p { font-size: var(--font-size-sm); color: var(--color-text-secondary); }
+
+    .panel-section {
+      padding: var(--space-5) var(--space-6);
+      border-bottom: 1px solid var(--color-border-light);
+    }
+    .panel-section-label {
+      font-size: var(--font-size-xs); font-weight: 700;
+      text-transform: uppercase; letter-spacing: 0.05em;
+      color: var(--color-text-muted); margin-bottom: var(--space-3);
+    }
+
+    /* AI Prompt */
+    .ai-prompt-area {
+      width: 100%; min-height: 80px; padding: var(--space-3) var(--space-4);
+      border: 1.5px solid var(--color-border); border-radius: var(--radius-md);
+      font-family: var(--font-family); font-size: var(--font-size-sm);
+      resize: vertical; outline: none; color: var(--color-text);
+      transition: border-color var(--transition-fast);
+    }
+    .ai-prompt-area::placeholder { color: var(--color-text-muted); }
+    .ai-prompt-area:focus { border-color: var(--color-primary); }
+
+    .prompt-chips {
+      display: flex; flex-wrap: wrap; gap: var(--space-2); margin-top: var(--space-3);
+    }
+    .prompt-chip {
+      padding: var(--space-1) var(--space-3);
+      background: var(--color-primary-50); border: 1px solid var(--color-primary-light);
+      border-radius: var(--radius-full); font-size: var(--font-size-xs);
+      color: var(--color-primary); cursor: pointer; font-weight: 500;
+      transition: all var(--transition-fast);
+    }
+    .prompt-chip:hover { background: var(--color-primary-light); }
+
+    .apply-btn {
+      width: 100%; margin-top: var(--space-4);
+      padding: var(--space-3) var(--space-5);
+      background: var(--color-primary); color: #fff; border: none;
+      border-radius: var(--radius-md); font-family: var(--font-family);
+      font-size: var(--font-size-sm); font-weight: 600; cursor: pointer;
+      display: flex; align-items: center; justify-content: center; gap: var(--space-2);
+      transition: all var(--transition-fast);
+    }
+    .apply-btn:hover { background: var(--color-primary-hover); }
+
+    /* Color theme */
+    .theme-swatches { display: flex; gap: var(--space-3); }
+    .swatch {
+      width: 40px; height: 40px; border-radius: var(--radius-md);
+      cursor: pointer; border: 2px solid transparent;
+      transition: all var(--transition-fast); position: relative;
+    }
+    .swatch:hover { transform: scale(1.1); }
+    .swatch.active { border-color: var(--color-text); }
+    .swatch.active::after {
+      content: ''; position: absolute; inset: -5px;
+      border: 2px solid var(--color-primary); border-radius: 10px;
+    }
+
+    /* Layout options */
+    .layout-options { display: flex; gap: var(--space-3); }
+    .layout-opt {
+      flex: 1; height: 56px; border-radius: var(--radius-md);
+      border: 2px solid var(--color-border); cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      transition: all var(--transition-fast); background: var(--color-background);
+    }
+    .layout-opt:hover { border-color: var(--color-text-muted); }
+    .layout-opt.active { border-color: var(--color-primary); background: var(--color-primary-50); }
+    .layout-opt-inner { width: 80%; height: 70%; display: flex; gap: 3px; }
+    .layout-block { background: var(--color-border); border-radius: 2px; }
+
+    /* Icon picker */
+    .icon-grid {
+      display: grid; grid-template-columns: repeat(6, 1fr); gap: var(--space-2);
+    }
+    .icon-item {
+      width: 100%; aspect-ratio: 1; border-radius: var(--radius-md);
+      border: 1px solid var(--color-border); display: flex; align-items: center;
+      justify-content: center; cursor: pointer; color: var(--color-text-secondary);
+      transition: all var(--transition-fast); background: var(--color-surface);
+    }
+    .icon-item:hover { border-color: var(--color-primary); color: var(--color-primary); background: var(--color-primary-50); }
+    .icon-item.active { border-color: var(--color-primary); color: var(--color-primary); background: var(--color-primary-50); }
+
+    /* Save button */
+    .panel-footer {
+      padding: var(--space-5) var(--space-6);
+      border-top: 1px solid var(--color-border);
+      margin-top: auto;
+    }
+    .save-btn {
+      width: 100%; padding: var(--space-4);
+      background: var(--color-accent); color: #fff; border: none;
+      border-radius: var(--radius-lg); font-family: var(--font-family);
+      font-size: var(--font-size-base); font-weight: 700; cursor: pointer;
+      display: flex; align-items: center; justify-content: center; gap: var(--space-2);
+      transition: all var(--transition-fast); box-shadow: var(--shadow-sm);
+    }
+    .save-btn:hover { background: var(--color-accent-hover); box-shadow: var(--shadow-md); transform: scale(1.01); }
+
+    @media (max-width: 768px) {
+      .edit-body { flex-direction: column; }
+      .edit-panel { width: 100%; border-left: none; border-top: 1px solid var(--color-border); max-height: 50vh; }
+      .edit-preview { padding: var(--space-4); }
+    }
+  </style>
+</head>
+<body>
+  <div class="edit-screen">
+    <!-- Top bar -->
+    <div class="edit-topbar">
+      <div class="edit-topbar-left">
+        <button class="edit-back">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+          Back to viewer
+        </button>
+        <span class="edit-title">Editing: How AI Is Changing Design in 2025</span>
+      </div>
+      <div class="edit-topbar-right">
+        <span class="autosave"><span class="dot"></span> Saved</span>
+        <button class="btn btn-sm btn-secondary">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>
+          Undo
+        </button>
+        <button class="btn btn-sm btn-accent">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
+          Publish
+        </button>
+      </div>
+    </div>
+
+    <!-- Split body -->
+    <div class="edit-body">
+      <!-- Left: preview -->
+      <div class="edit-preview">
+        <div class="edit-slide-container animate-fade-in">
+          <div class="editing-badge">
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+            Editing slide 4
+          </div>
+          <div class="edit-slide-inner">
+            <h3>Adoption by the Numbers</h3>
+            <div class="edit-stat-grid">
+              <div class="edit-stat">
+                <div class="edit-stat-value">340%</div>
+                <div class="edit-stat-label">Tool adoption growth</div>
+                <div class="edit-stat-bar"><div class="edit-stat-bar-fill" style="width:85%; background: var(--color-primary);"></div></div>
+              </div>
+              <div class="edit-stat">
+                <div class="edit-stat-value">67%</div>
+                <div class="edit-stat-label">Teams using Gen UI</div>
+                <div class="edit-stat-bar"><div class="edit-stat-bar-fill" style="width:67%; background: var(--color-secondary);"></div></div>
+              </div>
+              <div class="edit-stat">
+                <div class="edit-stat-value">4.2x</div>
+                <div class="edit-stat-label">Faster iteration</div>
+                <div class="edit-stat-bar"><div class="edit-stat-bar-fill" style="width:72%; background: var(--color-warning);"></div></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Slide nav -->
+        <div class="edit-slide-nav">
+          <button class="edit-nav-btn" aria-label="Previous">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+          </button>
+          <span class="edit-slide-counter">4 / 12</span>
+          <button class="edit-nav-btn" aria-label="Next">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+          </button>
+        </div>
+
+        <!-- Thumbnails -->
+        <div class="edit-thumbs">
+          <div class="edit-thumb"><div class="edit-thumb-inner" style="background: linear-gradient(135deg, #1e1b4b, #4338ca);"></div></div>
+          <div class="edit-thumb"><div class="edit-thumb-inner" style="background: linear-gradient(180deg, #f8fafc, #f1f5f9);"></div></div>
+          <div class="edit-thumb"><div class="edit-thumb-inner" style="background: linear-gradient(135deg, #fef3c7, #fff7ed);"></div></div>
+          <div class="edit-thumb active"><div class="edit-thumb-inner" style="background: linear-gradient(180deg, #f8fafc, #f1f5f9);"></div></div>
+          <div class="edit-thumb"><div class="edit-thumb-inner" style="background: linear-gradient(135deg, #fef3c7, #fff7ed);"></div></div>
+          <div class="edit-thumb"><div class="edit-thumb-inner" style="background: linear-gradient(180deg, #f8fafc, #f1f5f9);"></div></div>
+        </div>
+      </div>
+
+      <!-- Right: editing panel -->
+      <div class="edit-panel animate-slide-in">
+        <div class="panel-header">
+          <h3>Customize this slide</h3>
+          <p>Use AI or manual controls to edit</p>
+        </div>
+
+        <!-- AI Prompt -->
+        <div class="panel-section">
+          <div class="panel-section-label">AI Edit</div>
+          <textarea class="ai-prompt-area" placeholder="Describe what you want to change..."></textarea>
+          <div class="prompt-chips">
+            <span class="prompt-chip">Make this more visual</span>
+            <span class="prompt-chip">Add more statistics</span>
+            <span class="prompt-chip">Simplify the language</span>
+            <span class="prompt-chip">Add comparison chart</span>
+          </div>
+          <button class="apply-btn">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+            Apply with AI
+          </button>
+        </div>
+
+        <!-- Color Theme -->
+        <div class="panel-section">
+          <div class="panel-section-label">Color Theme</div>
+          <div class="theme-swatches">
+            <div class="swatch" style="background: linear-gradient(135deg, #6366f1, #8b5cf6);" title="Indigo"></div>
+            <div class="swatch active" style="background: linear-gradient(135deg, #14b8a6, #06b6d4);" title="Teal"></div>
+            <div class="swatch" style="background: linear-gradient(135deg, #f59e0b, #f97316);" title="Amber"></div>
+            <div class="swatch" style="background: linear-gradient(135deg, #1e293b, #475569);" title="Slate"></div>
+          </div>
+        </div>
+
+        <!-- Layout -->
+        <div class="panel-section">
+          <div class="panel-section-label">Layout</div>
+          <div class="layout-options">
+            <div class="layout-opt">
+              <div class="layout-opt-inner" style="flex-direction: column;">
+                <div class="layout-block" style="flex: 1; width: 100%;"></div>
+                <div class="layout-block" style="flex: 2; width: 100%;"></div>
+              </div>
+            </div>
+            <div class="layout-opt active">
+              <div class="layout-opt-inner">
+                <div class="layout-block" style="flex: 1;"></div>
+                <div class="layout-block" style="flex: 1;"></div>
+                <div class="layout-block" style="flex: 1;"></div>
+              </div>
+            </div>
+            <div class="layout-opt">
+              <div class="layout-opt-inner">
+                <div class="layout-block" style="flex: 2;"></div>
+                <div class="layout-block" style="flex: 1;"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Icons -->
+        <div class="panel-section">
+          <div class="panel-section-label">Icons</div>
+          <div class="icon-grid">
+            <div class="icon-item active">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+            </div>
+            <div class="icon-item">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>
+            </div>
+            <div class="icon-item">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+            </div>
+            <div class="icon-item">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+            </div>
+            <div class="icon-item">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 20V10M12 20V4M6 20v-6"/></svg>
+            </div>
+            <div class="icon-item">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+            </div>
+          </div>
+        </div>
+
+        <!-- Save -->
+        <div class="panel-footer">
+          <button class="save-btn">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+            Save Changes
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+<script>
+  const textarea = document.querySelector('.ai-prompt-area');
+  const applyBtn = document.querySelector('.apply-btn');
+  const saveBtn = document.querySelector('.save-btn');
+  const autosave = document.querySelector('.autosave');
+
+  // Prompt chips fill textarea
+  document.querySelectorAll('.prompt-chip').forEach(chip => {
+    chip.addEventListener('click', () => {
+      textarea.value = chip.textContent;
+      textarea.focus();
+    });
+  });
+
+  // Apply with AI → loading animation then "applied"
+  applyBtn.addEventListener('click', () => {
+    applyBtn.innerHTML = '<svg class="animate-spin" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg> Applying...';
+    applyBtn.style.pointerEvents = 'none';
+    setTimeout(() => {
+      applyBtn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Applied!';
+      applyBtn.style.background = '#22c55e';
+      autosave.innerHTML = '<span class="dot"></span> Unsaved changes';
+      autosave.querySelector('.dot').style.background = '#f59e0b';
+      setTimeout(() => {
+        applyBtn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg> Apply with AI';
+        applyBtn.style.background = '';
+        applyBtn.style.pointerEvents = '';
+        textarea.value = '';
+      }, 1500);
+    }, 1200);
+  });
+
+  // Color theme swatches
+  document.querySelectorAll('.swatch').forEach(s => {
+    s.addEventListener('click', () => {
+      document.querySelectorAll('.swatch').forEach(x => x.classList.remove('active'));
+      s.classList.add('active');
+    });
+  });
+
+  // Layout options
+  document.querySelectorAll('.layout-opt').forEach(opt => {
+    opt.addEventListener('click', () => {
+      document.querySelectorAll('.layout-opt').forEach(x => x.classList.remove('active'));
+      opt.classList.add('active');
+    });
+  });
+
+  // Icon picker
+  document.querySelectorAll('.icon-item').forEach(icon => {
+    icon.addEventListener('click', () => {
+      document.querySelectorAll('.icon-item').forEach(x => x.classList.remove('active'));
+      icon.classList.add('active');
+    });
+  });
+
+  // Save → go to viewer
+  saveBtn.addEventListener('click', () => {
+    saveBtn.innerHTML = '<svg class="animate-spin" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg> Saving...';
+    setTimeout(() => {
+      saveBtn.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Saved!';
+      saveBtn.style.background = '#22c55e';
+      setTimeout(() => { window.location.href = 'screen3-viewer.html'; }, 800);
+    }, 600);
+  });
+
+  // Back → Viewer
+  document.querySelector('.edit-back').addEventListener('click', () => {
+    window.location.href = 'screen3-viewer.html';
+  });
+
+  // Publish → Share
+  document.querySelectorAll('.btn-accent').forEach(b => {
+    if (b.textContent.includes('Publish')) b.addEventListener('click', () => { window.location.href = 'screen4-share.html'; });
+  });
+
+  // Slide nav
+  let editSlide = 3;
+  const slideCounter = document.querySelector('.edit-slide-counter');
+  document.querySelectorAll('.edit-nav-btn').forEach((btn, i) => {
+    btn.addEventListener('click', () => {
+      editSlide = i === 0 ? Math.max(1, editSlide - 1) : Math.min(12, editSlide + 1);
+      slideCounter.textContent = `${editSlide} / 12`;
+      document.querySelector('.editing-badge').lastChild.textContent = ` Editing slide ${editSlide}`;
+    });
+  });
+
+  // Thumbnail click
+  document.querySelectorAll('.edit-thumb').forEach((t, i) => {
+    t.addEventListener('click', () => {
+      document.querySelectorAll('.edit-thumb').forEach(x => x.classList.remove('active'));
+      t.classList.add('active');
+      editSlide = i + 1;
+      slideCounter.textContent = `${editSlide} / 12`;
+    });
+  });
+</script>
+</body>
+</html>

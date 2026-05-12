@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Slide Viewer — URL-to-Infographic</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+  <style>
+    .viewer { min-height: 100vh; display: flex; flex-direction: column; background: var(--color-background); }
+
+    /* Top bar */
+    .viewer-topbar {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: var(--space-3) var(--space-6);
+      background: var(--color-surface); border-bottom: 1px solid var(--color-border);
+    }
+    .viewer-topbar-left { display: flex; align-items: center; gap: var(--space-4); }
+    .viewer-back {
+      display: flex; align-items: center; gap: var(--space-2);
+      background: none; border: none; cursor: pointer; color: var(--color-text-secondary);
+      font-family: var(--font-family); font-size: var(--font-size-sm); font-weight: 500;
+      padding: var(--space-2) var(--space-3); border-radius: var(--radius-md);
+      transition: all var(--transition-fast);
+    }
+    .viewer-back:hover { background: var(--color-background); color: var(--color-text); }
+    .viewer-title {
+      font-weight: 700; font-size: var(--font-size-base);
+      max-width: 300px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    }
+    .viewer-topbar-right { display: flex; align-items: center; gap: var(--space-3); }
+
+    /* Main slide area */
+    .viewer-main {
+      flex: 1; display: flex; align-items: center; justify-content: center;
+      padding: var(--space-10) var(--space-16); position: relative;
+    }
+
+    /* Slide container */
+    .slide-container {
+      max-width: 800px; width: 100%;
+      aspect-ratio: 16 / 10;
+      background: var(--color-surface);
+      border-radius: var(--radius-xl);
+      box-shadow: var(--shadow-xl);
+      overflow: hidden; position: relative;
+    }
+
+    /* Slide variants */
+    .slide-title {
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      height: 100%; padding: var(--space-12);
+      background: linear-gradient(135deg, #1e1b4b 0%, #312e81 50%, #4338ca 100%);
+      color: #fff; text-align: center;
+    }
+    .slide-title .slide-source {
+      display: inline-flex; align-items: center; gap: var(--space-2);
+      padding: var(--space-2) var(--space-4);
+      background: rgba(255,255,255,0.12); border-radius: var(--radius-full);
+      font-size: var(--font-size-sm); color: rgba(255,255,255,0.7);
+      margin-bottom: var(--space-6);
+    }
+    .slide-title h2 {
+      font-size: clamp(1.5rem, 3vw, 2.5rem); font-weight: 800;
+      line-height: 1.2; margin-bottom: var(--space-4); max-width: 600px;
+    }
+    .slide-title .slide-meta {
+      display: flex; gap: var(--space-4); align-items: center;
+      font-size: var(--font-size-sm); color: rgba(255,255,255,0.6);
+    }
+    .slide-title .slide-meta span { display: flex; align-items: center; gap: var(--space-2); }
+
+    .slide-keypoints {
+      display: flex; flex-direction: column; justify-content: center;
+      height: 100%; padding: var(--space-10) var(--space-12);
+      background: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%);
+    }
+    .slide-keypoints h3 {
+      font-size: var(--font-size-2xl); font-weight: 800;
+      color: var(--color-primary); margin-bottom: var(--space-8);
+      display: flex; align-items: center; gap: var(--space-3);
+    }
+    .slide-keypoints h3 .icon {
+      width: 36px; height: 36px; background: var(--color-primary-light);
+      border-radius: var(--radius-md); display: flex; align-items: center;
+      justify-content: center; color: var(--color-primary);
+    }
+    .keypoint {
+      display: flex; gap: var(--space-4); align-items: flex-start;
+      padding: var(--space-3) 0;
+    }
+    .keypoint + .keypoint { border-top: 1px solid var(--color-border-light); }
+    .keypoint-num {
+      width: 28px; height: 28px; border-radius: 50%;
+      background: var(--color-primary); color: #fff;
+      display: flex; align-items: center; justify-content: center;
+      font-size: var(--font-size-sm); font-weight: 700; flex-shrink: 0;
+    }
+    .keypoint-text { font-size: var(--font-size-base); line-height: 1.6; padding-top: 2px; }
+
+    .slide-quote {
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      height: 100%; padding: var(--space-12) var(--space-16);
+      background: linear-gradient(135deg, #fef3c7 0%, #fff7ed 100%);
+      text-align: center;
+    }
+    .slide-quote .quote-mark {
+      font-size: 4rem; color: var(--color-warning); line-height: 1; margin-bottom: var(--space-2);
+      font-family: Georgia, serif;
+    }
+    .slide-quote blockquote {
+      font-size: var(--font-size-2xl); font-weight: 600;
+      font-style: italic; line-height: 1.5;
+      max-width: 540px; color: #78350f; margin-bottom: var(--space-6);
+    }
+    .slide-quote .attribution {
+      font-size: var(--font-size-sm); color: #92400e; font-weight: 500;
+    }
+
+    .slide-stats {
+      display: flex; flex-direction: column; justify-content: center;
+      height: 100%; padding: var(--space-10) var(--space-12);
+      background: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%);
+    }
+    .slide-stats h3 {
+      font-size: var(--font-size-2xl); font-weight: 800;
+      margin-bottom: var(--space-8); color: var(--color-text);
+    }
+    .stats-grid {
+      display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--space-4);
+    }
+    .stat-card {
+      background: var(--color-surface); border-radius: var(--radius-lg);
+      padding: var(--space-5); text-align: center;
+      border: 1px solid var(--color-border);
+    }
+    .stat-value {
+      font-size: var(--font-size-4xl); font-weight: 800;
+      color: var(--color-primary); line-height: 1.1;
+    }
+    .stat-label {
+      font-size: var(--font-size-sm); color: var(--color-text-secondary);
+      margin-top: var(--space-2);
+    }
+    .stat-bar {
+      height: 6px; background: var(--color-border-light); border-radius: 3px;
+      margin-top: var(--space-3); overflow: hidden;
+    }
+    .stat-bar-fill { height: 100%; border-radius: 3px; }
+
+    /* Navigation arrows */
+    .nav-arrow {
+      position: absolute; top: 50%; transform: translateY(-50%);
+      width: 48px; height: 48px; border-radius: 50%;
+      background: rgba(255,255,255,0.9); border: 1px solid var(--color-border);
+      box-shadow: var(--shadow-md); cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      color: var(--color-text); transition: all var(--transition-fast);
+      z-index: 5;
+    }
+    .nav-arrow:hover { background: #fff; box-shadow: var(--shadow-lg); transform: translateY(-50%) scale(1.05); }
+    .nav-prev { left: var(--space-6); }
+    .nav-next { right: var(--space-6); }
+
+    /* Bottom controls */
+    .viewer-bottom {
+      padding: var(--space-4) var(--space-6);
+      display: flex; align-items: center; justify-content: center; gap: var(--space-4);
+      background: var(--color-surface); border-top: 1px solid var(--color-border);
+    }
+    .slide-counter {
+      font-size: var(--font-size-sm); font-weight: 600;
+      color: var(--color-text-secondary);
+    }
+    .slide-dots { display: flex; gap: var(--space-2); }
+    .slide-dot {
+      width: 8px; height: 8px; border-radius: 50%;
+      background: var(--color-border); transition: all var(--transition-fast);
+      cursor: pointer;
+    }
+    .slide-dot.active { background: var(--color-primary); width: 24px; border-radius: 4px; }
+
+    /* Bottom progress */
+    .viewer-progress {
+      position: fixed; bottom: 0; left: 0; right: 0; height: 3px;
+      background: var(--color-border-light); z-index: 20;
+    }
+    .viewer-progress-fill {
+      height: 100%; background: var(--color-primary);
+      transition: width var(--transition-base);
+    }
+
+    /* Thumbnail strip */
+    .thumb-strip {
+      display: flex; gap: var(--space-2); padding: 0 var(--space-6);
+      overflow-x: auto; scrollbar-width: none;
+    }
+    .thumb-strip::-webkit-scrollbar { display: none; }
+    .thumb {
+      width: 64px; height: 40px; border-radius: var(--radius-sm);
+      border: 2px solid transparent; flex-shrink: 0; cursor: pointer;
+      transition: all var(--transition-fast);
+    }
+    .thumb.active { border-color: var(--color-primary); }
+    .thumb:hover { border-color: var(--color-text-muted); }
+
+    @media (max-width: 768px) {
+      .viewer-main { padding: var(--space-4); }
+      .nav-arrow { width: 36px; height: 36px; }
+      .nav-prev { left: var(--space-2); }
+      .nav-next { right: var(--space-2); }
+      .slide-keypoints { padding: var(--space-6); }
+      .stats-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="viewer">
+    <!-- Top bar -->
+    <div class="viewer-topbar">
+      <div class="viewer-topbar-left">
+        <button class="viewer-back">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+          Back
+        </button>
+        <span class="viewer-title">How AI Is Changing Design in 2025</span>
+        <span class="badge badge-success">12 slides</span>
+      </div>
+      <div class="viewer-topbar-right">
+        <button class="btn btn-sm btn-secondary">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+          Edit
+        </button>
+        <button class="btn btn-sm btn-accent">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
+          Publish
+        </button>
+      </div>
+    </div>
+
+    <!-- Main slide area -->
+    <div class="viewer-main">
+      <!-- Nav arrows -->
+      <button class="nav-arrow nav-prev" aria-label="Previous slide">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+      </button>
+      <button class="nav-arrow nav-next" aria-label="Next slide">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+      </button>
+
+      <!-- Slides (only one visible at a time) -->
+      <div class="slide-container" id="slideArea"></div>
+    </div>
+
+    <!-- Bottom controls -->
+    <div class="viewer-bottom">
+      <div class="slide-dots" id="dots"></div>
+      <span class="slide-counter" id="counter">1 / 5</span>
+    </div>
+
+    <!-- Bottom progress bar -->
+    <div class="viewer-progress">
+      <div class="viewer-progress-fill" id="progressFill" style="width: 20%;"></div>
+    </div>
+  </div>
+<script>
+  const slides = [
+    // 1 - Title
+    `<div class="slide-title">
+      <div class="slide-source"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg> blog.example.com</div>
+      <h2>How AI Is Changing Design in 2025</h2>
+      <div class="slide-meta"><span>By Alex Rivera</span><span>•</span><span>May 2025</span><span>•</span><span>8 min read</span></div>
+    </div>`,
+    // 2 - Key Points
+    `<div class="slide-keypoints">
+      <h3><span class="icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg></span> Key Takeaways</h3>
+      <div class="keypoint"><span class="keypoint-num">1</span><span class="keypoint-text"><strong>AI-assisted design tools</strong> have grown 340% in adoption since 2023, with Figma, Framer, and new players leading the charge.</span></div>
+      <div class="keypoint"><span class="keypoint-num">2</span><span class="keypoint-text"><strong>Generative UI</strong> is moving from prototyping to production, with 67% of teams using AI to generate component variations.</span></div>
+      <div class="keypoint"><span class="keypoint-num">3</span><span class="keypoint-text"><strong>Design systems</strong> are becoming AI-native, with tokens and constraints feeding directly into generation pipelines.</span></div>
+      <div class="keypoint"><span class="keypoint-num">4</span><span class="keypoint-text"><strong>The designer's role</strong> is shifting from pixel-pushing to curation, direction-setting, and quality assurance.</span></div>
+    </div>`,
+    // 3 - Quote
+    `<div class="slide-quote">
+      <div class="quote-mark">"</div>
+      <blockquote>The best design tools of 2025 won't replace designers — they'll make every designer 10x more effective by handling the tedious 80% so humans can focus on the creative 20%.</blockquote>
+      <div class="attribution">— Sarah Chen, VP of Design at Vercel</div>
+    </div>`,
+    // 4 - Stats
+    `<div class="slide-stats">
+      <h3>Adoption by the Numbers</h3>
+      <div class="stats-grid">
+        <div class="stat-card"><div class="stat-value">340%</div><div class="stat-label">Tool adoption growth</div><div class="stat-bar"><div class="stat-bar-fill" style="width:85%; background: var(--color-primary);"></div></div></div>
+        <div class="stat-card"><div class="stat-value">67%</div><div class="stat-label">Teams using Gen UI</div><div class="stat-bar"><div class="stat-bar-fill" style="width:67%; background: var(--color-secondary);"></div></div></div>
+        <div class="stat-card"><div class="stat-value">4.2x</div><div class="stat-label">Faster iteration</div><div class="stat-bar"><div class="stat-bar-fill" style="width:72%; background: var(--color-warning);"></div></div></div>
+      </div>
+    </div>`,
+    // 5 - Conclusion
+    `<div class="slide-keypoints" style="background: linear-gradient(135deg, #1e1b4b, #312e81, #4338ca); color: #fff;">
+      <h3 style="color: rgba(255,255,255,0.9);"><span class="icon" style="background:rgba(255,255,255,0.15);color:#fff;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span> Conclusion</h3>
+      <div class="keypoint" style="border-color: rgba(255,255,255,0.1);"><span class="keypoint-num" style="background:rgba(255,255,255,0.2);">✓</span><span class="keypoint-text" style="color:rgba(255,255,255,0.85);">AI is augmenting, not replacing, the design process</span></div>
+      <div class="keypoint" style="border-color: rgba(255,255,255,0.1);"><span class="keypoint-num" style="background:rgba(255,255,255,0.2);">✓</span><span class="keypoint-text" style="color:rgba(255,255,255,0.85);">Teams adopting AI tools ship 4x faster with higher consistency</span></div>
+      <div class="keypoint" style="border-color: rgba(255,255,255,0.1);"><span class="keypoint-num" style="background:rgba(255,255,255,0.2);">✓</span><span class="keypoint-text" style="color:rgba(255,255,255,0.85);">The future belongs to designer-AI collaboration, not automation</span></div>
+    </div>`
+  ];
+
+  let current = 0;
+  const slideArea = document.getElementById('slideArea');
+  const dots = document.getElementById('dots');
+  const counter = document.getElementById('counter');
+  const progressFill = document.getElementById('progressFill');
+
+  function renderSlide() {
+    slideArea.style.opacity = 0;
+    setTimeout(() => {
+      slideArea.innerHTML = slides[current];
+      slideArea.style.opacity = 1;
+    }, 150);
+    // Update dots
+    dots.innerHTML = slides.map((_, i) =>
+      `<div class="slide-dot${i === current ? ' active' : ''}" data-i="${i}"></div>`
+    ).join('');
+    dots.querySelectorAll('.slide-dot').forEach(d => {
+      d.addEventListener('click', () => { current = +d.dataset.i; renderSlide(); });
+    });
+    counter.textContent = `${current + 1} / ${slides.length}`;
+    progressFill.style.width = `${((current + 1) / slides.length) * 100}%`;
+  }
+
+  slideArea.style.transition = 'opacity 0.15s ease';
+  renderSlide();
+
+  document.querySelector('.nav-prev').addEventListener('click', () => {
+    current = (current - 1 + slides.length) % slides.length;
+    renderSlide();
+  });
+  document.querySelector('.nav-next').addEventListener('click', () => {
+    current = (current + 1) % slides.length;
+    renderSlide();
+  });
+
+  // Keyboard nav
+  document.addEventListener('keydown', e => {
+    if (e.key === 'ArrowLeft') { current = (current - 1 + slides.length) % slides.length; renderSlide(); }
+    if (e.key === 'ArrowRight') { current = (current + 1) % slides.length; renderSlide(); }
+  });
+
+  // Back → Landing
+  document.querySelector('.viewer-back').addEventListener('click', () => {
+    window.location.href = 'screen1-landing.html';
+  });
+
+  // Edit → Edit Mode
+  document.querySelectorAll('.btn-secondary').forEach(b => {
+    if (b.textContent.includes('Edit')) b.addEventListener('click', () => { window.location.href = 'screen5-edit.html'; });
+  });
+
+  // Publish → Share Mode
+  document.querySelectorAll('.btn-accent').forEach(b => {
+    if (b.textContent.includes('Publish')) b.addEventListener('click', () => { window.location.href = 'screen4-share.html'; });
+  });
+</script>
+</body>
+</html>

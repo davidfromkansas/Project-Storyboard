@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Loading — URL-to-Infographic</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+  <style>
+    .loading-screen {
+      min-height: 100vh; display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      padding: var(--space-8); position: relative;
+    }
+    .loading-screen::before {
+      content: ''; position: absolute; top: 50%; left: 50%;
+      width: 800px; height: 800px; transform: translate(-50%, -50%);
+      background: radial-gradient(circle, rgba(99,102,241,0.04) 0%, transparent 70%);
+      pointer-events: none;
+    }
+
+    /* Spinner */
+    .spinner-container {
+      position: relative; width: 80px; height: 80px;
+      margin-bottom: var(--space-10);
+    }
+    .spinner-ring {
+      width: 80px; height: 80px; border-radius: 50%;
+      border: 3px solid var(--color-border-light);
+      border-top-color: var(--color-primary);
+      animation: spin 1s linear infinite;
+    }
+    .spinner-icon {
+      position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+      color: var(--color-primary); display: flex;
+    }
+
+    /* Progress Steps */
+    .progress-steps {
+      display: flex; flex-direction: column; gap: var(--space-5);
+      margin-bottom: var(--space-10); min-width: 300px;
+    }
+    .step {
+      display: flex; align-items: center; gap: var(--space-4);
+      padding: var(--space-4) var(--space-5);
+      border-radius: var(--radius-lg);
+      transition: all var(--transition-base);
+    }
+    .step-icon {
+      width: 32px; height: 32px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0; font-size: 14px;
+    }
+    .step-content { flex: 1; }
+    .step-label { font-weight: 600; font-size: var(--font-size-base); }
+    .step-detail { font-size: var(--font-size-sm); color: var(--color-text-muted); margin-top: 2px; }
+
+    /* Step states */
+    .step-complete {
+      background: #f0fdf4;
+    }
+    .step-complete .step-icon {
+      background: var(--color-success); color: #fff;
+    }
+    .step-complete .step-label { color: #16a34a; }
+
+    .step-active {
+      background: var(--color-primary-50);
+    }
+    .step-active .step-icon {
+      background: var(--color-primary); color: #fff;
+      animation: pulse 2s ease-in-out infinite;
+    }
+    .step-active .step-label { color: var(--color-primary); font-weight: 700; }
+
+    .step-pending .step-icon {
+      background: var(--color-border-light); color: var(--color-text-muted);
+      border: 2px solid var(--color-border);
+    }
+    .step-pending .step-label { color: var(--color-text-muted); }
+
+    /* Timer */
+    .timer {
+      display: flex; align-items: center; gap: var(--space-2);
+      font-size: var(--font-size-sm); color: var(--color-text-muted);
+      margin-bottom: var(--space-6);
+    }
+    .timer svg { width: 16px; height: 16px; }
+
+    /* URL Preview */
+    .url-preview {
+      display: flex; align-items: center; gap: var(--space-3);
+      padding: var(--space-3) var(--space-5);
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-full);
+      margin-bottom: var(--space-10);
+      max-width: 400px;
+    }
+    .url-preview .url-favicon {
+      width: 20px; height: 20px; background: var(--color-border);
+      border-radius: var(--radius-sm); flex-shrink: 0;
+    }
+    .url-preview .url-text {
+      font-size: var(--font-size-sm); color: var(--color-text-secondary);
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    }
+
+    /* Cancel */
+    .cancel-btn {
+      background: none; border: none; cursor: pointer;
+      font-family: var(--font-family); font-size: var(--font-size-sm);
+      color: var(--color-text-muted); padding: var(--space-2) var(--space-4);
+      border-radius: var(--radius-md); transition: all var(--transition-fast);
+    }
+    .cancel-btn:hover { background: var(--color-border-light); color: var(--color-text-secondary); }
+
+    /* Overall progress bar */
+    .overall-progress {
+      width: 300px; margin-bottom: var(--space-3);
+    }
+  </style>
+</head>
+<body>
+  <div class="loading-screen">
+    <!-- URL being processed -->
+    <div class="url-preview animate-fade-in">
+      <div class="url-favicon"></div>
+      <span class="url-text">blog.example.com/how-ai-is-changing-design-in-2025</span>
+    </div>
+
+    <!-- Spinner -->
+    <div class="spinner-container animate-fade-in">
+      <div class="spinner-ring"></div>
+      <div class="spinner-icon">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+      </div>
+    </div>
+
+    <!-- Steps -->
+    <div class="progress-steps">
+      <div class="step step-complete animate-fade-in">
+        <div class="step-icon">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+        </div>
+        <div class="step-content">
+          <div class="step-label">Extracting content</div>
+          <div class="step-detail">Found 2,340 words and 5 images</div>
+        </div>
+      </div>
+
+      <div class="step step-active animate-fade-in-delay-1">
+        <div class="step-icon">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>
+        </div>
+        <div class="step-content">
+          <div class="step-label">Analyzing key points</div>
+          <div class="step-detail">Identifying themes and structure...</div>
+        </div>
+      </div>
+
+      <div class="step step-pending animate-fade-in-delay-2">
+        <div class="step-icon">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/></svg>
+        </div>
+        <div class="step-content">
+          <div class="step-label">Generating slides</div>
+          <div class="step-detail">Creating visual layouts</div>
+        </div>
+      </div>
+
+      <div class="step step-pending animate-fade-in-delay-3">
+        <div class="step-icon">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/></svg>
+        </div>
+        <div class="step-content">
+          <div class="step-label">Applying design</div>
+          <div class="step-detail">Polishing and formatting</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Progress bar -->
+    <div class="overall-progress animate-fade-in-delay-2">
+      <div class="progress-bar">
+        <div class="progress-bar-fill" style="width: 45%;"></div>
+      </div>
+    </div>
+
+    <!-- Timer -->
+    <div class="timer animate-fade-in-delay-2">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+      About 20 seconds remaining
+    </div>
+
+    <!-- Cancel -->
+    <button class="cancel-btn animate-fade-in-delay-3">Cancel</button>
+  </div>
+<script>
+  const steps = document.querySelectorAll('.step');
+  const progressFill = document.querySelector('.progress-bar-fill');
+  const timer = document.querySelector('.timer');
+  const checkSvg = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>';
+  const spinSvg = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>';
+
+  function completeStep(i) {
+    steps[i].className = 'step step-complete';
+    steps[i].querySelector('.step-icon').innerHTML = checkSvg;
+  }
+  function activateStep(i) {
+    steps[i].className = 'step step-active';
+    steps[i].querySelector('.step-icon').innerHTML = spinSvg;
+  }
+
+  const details = [
+    'Found 2,340 words and 5 images',
+    'Identified 4 key themes',
+    'Created 12 slide layouts',
+    'Applied indigo theme with icons'
+  ];
+
+  // Step 1 already complete, step 2 active
+  // After 1.5s: complete step 2, activate step 3
+  setTimeout(() => {
+    completeStep(1);
+    steps[1].querySelector('.step-detail').textContent = details[1];
+    activateStep(2);
+    progressFill.style.width = '60%';
+    timer.lastChild.textContent = ' About 12 seconds remaining';
+  }, 1500);
+
+  // After 3s: complete step 3, activate step 4
+  setTimeout(() => {
+    completeStep(2);
+    steps[2].querySelector('.step-detail').textContent = details[2];
+    activateStep(3);
+    progressFill.style.width = '80%';
+    timer.lastChild.textContent = ' About 5 seconds remaining';
+  }, 3000);
+
+  // After 4.5s: complete step 4, navigate to viewer
+  setTimeout(() => {
+    completeStep(3);
+    steps[3].querySelector('.step-detail').textContent = details[3];
+    progressFill.style.width = '100%';
+    timer.lastChild.textContent = ' Done!';
+  }, 4500);
+
+  setTimeout(() => { window.location.href = 'screen3-viewer.html'; }, 5500);
+
+  // Cancel → back to landing
+  document.querySelector('.cancel-btn').addEventListener('click', () => {
+    window.location.href = 'screen1-landing.html';
+  });
+</script>
+</body>
+</html>
