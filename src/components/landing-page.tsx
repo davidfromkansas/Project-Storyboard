@@ -55,7 +55,7 @@ export function LandingPage({ user }: LandingPageProps) {
               />
             </svg>
           </div>
-          <span className="font-semibold text-[#1e293b]">SlideGen</span>
+          <span className="font-semibold text-[#1e293b]">Glyph</span>
         </div>
         <div className="flex items-center gap-3">
           <a
@@ -137,7 +137,7 @@ export function LandingPage({ user }: LandingPageProps) {
 
       {/* Footer */}
       <footer className="py-4 text-center text-sm text-[#94a3b8]">
-        Made with SlideGen
+        Made with Glyph
       </footer>
     </div>
   );

@@ -4,7 +4,7 @@ export default function LoginPage() {
       <div className="w-full max-w-md p-8 space-y-8">
         <div className="text-center space-y-2">
           <h1 className="text-3xl font-bold text-[#1e293b]">
-            Welcome to SlideGen
+            Welcome to Glyph
           </h1>
           <p className="text-[#64748b]">
             Turn any article into visual infographics
