@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useParams } from "next/navigation";
+import Link from "next/link";
 
 interface Slide {
   id: string;
@@ -17,63 +18,34 @@ interface Deck {
   id: string;
   title: string;
   sourceUrl: string;
-  quality: string;
   createdAt: string;
-  isPublished: boolean;
-  shareId: string | null;
   slides: Slide[];
+  user: { name: string | null };
 }
 
-export default function DeckViewer() {
+export default function SharePage() {
   const params = useParams();
-  const router = useRouter();
   const [deck, setDeck] = useState<Deck | null>(null);
   const [currentSlide, setCurrentSlide] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showDetails, setShowDetails] = useState(false);
   const [showPrompt, setShowPrompt] = useState(false);
-  const [publishing, setPublishing] = useState(false);
-  const [shareUrl, setShareUrl] = useState<string | null>(null);
-  const [copied, setCopied] = useState(false);
 
   useEffect(() => {
     async function fetchDeck() {
-      const res = await fetch(`/api/decks/${params.id}`);
+      const res = await fetch(`/api/share/${params.id}`);
       if (!res.ok) {
-        setError("Failed to load deck");
+        setError("Deck not found or not published");
         setLoading(false);
         return;
       }
       const data = await res.json();
       setDeck(data);
-      if (data.isPublished && data.shareId) {
-        setShareUrl(`${window.location.origin}/s/${data.shareId}`);
-      }
       setLoading(false);
     }
     fetchDeck();
   }, [params.id]);
-
-  async function handlePublish() {
-    if (!deck) return;
-    setPublishing(true);
-    const res = await fetch(`/api/decks/${deck.id}/publish`, { method: "POST" });
-    if (res.ok) {
-      const data = await res.json();
-      const url = `${window.location.origin}${data.shareUrl}`;
-      setShareUrl(url);
-      setDeck({ ...deck, isPublished: true, shareId: data.shareId });
-    }
-    setPublishing(false);
-  }
-
-  function handleCopy() {
-    if (!shareUrl) return;
-    navigator.clipboard.writeText(shareUrl);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  }
 
   useEffect(() => {
     const handleKey = (e: KeyboardEvent) => {
@@ -99,9 +71,6 @@ export default function DeckViewer() {
     return (
       <div className="min-h-screen bg-[#f8fafc] flex flex-col items-center justify-center gap-4">
         <p className="text-red-600">{error || "Deck not found"}</p>
-        <button onClick={() => router.push("/")} className="text-[#6366f1] underline">
-          Go home
-        </button>
       </div>
     );
   }
@@ -113,36 +82,21 @@ export default function DeckViewer() {
       {/* Top bar */}
       <header className="flex items-center justify-between px-4 py-3 bg-white border-b border-[#e2e8f0]">
         <div className="flex items-center gap-3">
-          <button
-            onClick={() => router.push("/")}
-            className="text-[#64748b] hover:text-[#1e293b] transition-colors"
-          >
-            ← Back
-          </button>
-          <h1 className="text-sm font-semibold text-[#1e293b] truncate max-w-[300px]">
+          <div className="flex items-center gap-2">
+            <div className="w-7 h-7 rounded-lg bg-[#6366f1] flex items-center justify-center">
+              <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+              </svg>
+            </div>
+            <span className="text-sm font-semibold text-[#1e293b]">SlideGen</span>
+          </div>
+          <span className="text-[#cbd5e1]">|</span>
+          <h1 className="text-sm font-medium text-[#475569] truncate max-w-[250px]">
             {deck.title}
           </h1>
         </div>
-        <div className="flex items-center gap-3">
-          <span className="text-sm text-[#94a3b8]">
-            {currentSlide + 1} / {deck.slides.length}
-          </span>
-          {shareUrl ? (
-            <button
-              onClick={handleCopy}
-              className="px-3 py-1.5 bg-[#10b981] text-white text-sm rounded-lg hover:bg-[#059669] transition-all font-medium"
-            >
-              {copied ? "Copied!" : "Copy link"}
-            </button>
-          ) : (
-            <button
-              onClick={handlePublish}
-              disabled={publishing}
-              className="px-3 py-1.5 bg-[#6366f1] text-white text-sm rounded-lg hover:bg-[#5558e6] transition-all font-medium disabled:opacity-50"
-            >
-              {publishing ? "Publishing..." : "Publish"}
-            </button>
-          )}
+        <div className="text-sm text-[#94a3b8]">
+          {currentSlide + 1} / {deck.slides.length}
         </div>
       </header>
 
@@ -159,12 +113,7 @@ export default function DeckViewer() {
               />
             ) : (
               <div className="w-full h-full flex items-center justify-center text-[#94a3b8]">
-                <div className="text-center space-y-2">
-                  <svg className="w-12 h-12 mx-auto opacity-50" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                  </svg>
-                  <p className="text-sm">Image generating...</p>
-                </div>
+                <p className="text-sm">Image not available</p>
               </div>
             )}
 
@@ -246,6 +195,17 @@ export default function DeckViewer() {
           </div>
         </div>
       </main>
+
+      {/* Footer */}
+      <footer className="text-center py-4 border-t border-[#e2e8f0]">
+        <p className="text-xs text-[#94a3b8]">
+          {deck.user?.name && <span>By {deck.user.name} · </span>}
+          Made with{" "}
+          <Link href="/" className="text-[#6366f1] hover:underline">
+            SlideGen
+          </Link>
+        </p>
+      </footer>
     </div>
   );
 }

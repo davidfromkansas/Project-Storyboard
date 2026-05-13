@@ -58,6 +58,12 @@ export function LandingPage({ user }: LandingPageProps) {
           <span className="font-semibold text-[#1e293b]">SlideGen</span>
         </div>
         <div className="flex items-center gap-3">
+          <a
+            href="/profile"
+            className="text-sm text-[#6366f1] hover:text-[#5558e6] font-medium transition-colors"
+          >
+            My Decks
+          </a>
           <span className="text-sm text-[#64748b]">{user.email}</span>
           <button
             onClick={() => {
