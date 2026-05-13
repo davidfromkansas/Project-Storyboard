@@ -8,7 +8,7 @@ const inter = Inter({
 });
 
 const siteUrl =
-  process.env.AUTH_URL || "https://glyph-production.up.railway.app";
+  process.env.AUTH_URL || "https://glyph-ai-production.up.railway.app";
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
