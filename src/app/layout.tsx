@@ -7,10 +7,36 @@ const inter = Inter({
   subsets: ["latin"],
 });
 
+const siteUrl =
+  process.env.AUTH_URL || "https://glyph-ai-production.up.railway.app";
+
 export const metadata: Metadata = {
-  title: "SlideGen — Turn Articles into Visual Infographics",
+  metadataBase: new URL(siteUrl),
+  title: "Glyph — Turn Articles into Visual Infographics",
   description:
     "Paste a URL and get AI-generated whiteboard-style infographic slides in seconds. Powered by GPT-5.5 + gpt-image-2.",
+  openGraph: {
+    title: "Glyph — Turn Articles into Visual Infographics",
+    description:
+      "Paste a URL and get AI-generated whiteboard-style infographic slides in seconds. Powered by GPT-5.5 + gpt-image-2.",
+    type: "website",
+    siteName: "Glyph",
+    images: [
+      {
+        url: "/og-image.png",
+        width: 1200,
+        height: 630,
+        alt: "Glyph — Turn Articles into Visual Infographics",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Glyph — Turn Articles into Visual Infographics",
+    description:
+      "Paste a URL and get AI-generated whiteboard-style infographic slides in seconds. Powered by GPT-5.5 + gpt-image-2.",
+    images: ["/og-image.png"],
+  },
 };
 
 export default function RootLayout({
