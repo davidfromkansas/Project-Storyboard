@@ -1,8 +1,5 @@
 "use client";
 
-import Link from "next/link";
-import { useParams } from "next/navigation";
-
 export interface KeyIdea {
   id: string;
   index: number;
@@ -10,46 +7,41 @@ export interface KeyIdea {
   subtitle?: string;
 }
 
-export interface Guide {
-  id: string;
+interface SidebarProps {
   title: string;
   ideas: KeyIdea[];
+  activeIndex: number;
+  onSelect: (index: number) => void;
+  onBack: () => void;
 }
 
-interface SidebarProps {
-  guide: Guide;
-}
-
-export function Sidebar({ guide }: SidebarProps) {
-  const params = useParams();
-  const activeId = params.ideaId as string | undefined;
-
+export function Sidebar({ title, ideas, activeIndex, onSelect, onBack }: SidebarProps) {
   return (
     <nav
       aria-label="Key ideas"
       className="w-[380px] shrink-0 h-screen sticky top-0 bg-white border-r border-[#E2E8F0] flex flex-col overflow-hidden"
     >
-      <SidebarHeader guideId={guide.id} title={guide.title} />
-      <GlyphList guide={guide} activeId={activeId} />
+      <SidebarHeader title={title} onBack={onBack} />
+      <GlyphList ideas={ideas} activeIndex={activeIndex} onSelect={onSelect} />
     </nav>
   );
 }
 
 function SidebarHeader({
-  guideId,
   title,
+  onBack,
 }: {
-  guideId: string;
   title: string;
+  onBack: () => void;
 }) {
   return (
     <div className="px-6 pt-6 pb-4">
-      <Link
-        href={`/guides/${guideId}`}
+      <button
+        onClick={onBack}
         className="inline-flex items-center gap-1 text-sm font-medium text-[#64748B] hover:text-[#0F172A] transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2563EB] rounded"
       >
         <span aria-hidden="true">&larr;</span> Back
-      </Link>
+      </button>
       <h1
         className="mt-4 text-[22px] leading-[1.3] font-bold text-[#0F172A] line-clamp-3"
       >
@@ -60,20 +52,22 @@ function SidebarHeader({
 }
 
 function GlyphList({
-  guide,
-  activeId,
+  ideas,
+  activeIndex,
+  onSelect,
 }: {
-  guide: Guide;
-  activeId: string | undefined;
+  ideas: KeyIdea[];
+  activeIndex: number;
+  onSelect: (index: number) => void;
 }) {
   return (
     <ol className="flex-1 overflow-y-auto px-3 pb-6 space-y-1">
-      {guide.ideas.map((idea) => (
+      {ideas.map((idea, i) => (
         <GlyphListItem
           key={idea.id}
           idea={idea}
-          guideId={guide.id}
-          isSelected={idea.id === activeId}
+          isSelected={i === activeIndex}
+          onSelect={() => onSelect(i)}
         />
       ))}
     </ol>
@@ -82,20 +76,20 @@ function GlyphList({
 
 function GlyphListItem({
   idea,
-  guideId,
   isSelected,
+  onSelect,
 }: {
   idea: KeyIdea;
-  guideId: string;
   isSelected: boolean;
+  onSelect: () => void;
 }) {
   return (
     <li>
-      <Link
-        href={`/guides/${guideId}/ideas/${idea.id}`}
+      <button
+        onClick={onSelect}
         aria-current={isSelected ? "page" : undefined}
         className={`
-          flex items-start gap-3 px-3 py-3 rounded-lg transition-colors
+          w-full text-left flex items-start gap-3 px-3 py-3 rounded-lg transition-colors
           focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2563EB]
           ${
             isSelected
@@ -134,7 +128,7 @@ function GlyphListItem({
             </span>
           )}
         </span>
-      </Link>
+      </button>
     </li>
   );
 }
