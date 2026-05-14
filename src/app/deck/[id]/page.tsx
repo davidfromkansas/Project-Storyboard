@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
+import { Sidebar, KeyIdea } from "@/components/sidebar";
 
 interface Slide {
   id: string;
@@ -108,46 +109,55 @@ export default function DeckViewer() {
 
   const slide = deck.slides[currentSlide];
 
-  return (
-    <div className="min-h-screen bg-[#f8fafc] flex flex-col">
-      {/* Top bar */}
-      <header className="flex items-center justify-between px-4 py-3 bg-white border-b border-[#e2e8f0]">
-        <div className="flex items-center gap-3">
-          <button
-            onClick={() => router.push("/")}
-            className="text-[#64748b] hover:text-[#1e293b] transition-colors"
-          >
-            ← Back
-          </button>
-          <h1 className="text-sm font-semibold text-[#1e293b] truncate max-w-[300px]">
-            {deck.title}
-          </h1>
-        </div>
-        <div className="flex items-center gap-3">
-          <span className="text-sm text-[#94a3b8]">
-            {currentSlide + 1} / {deck.slides.length}
-          </span>
-          {shareUrl ? (
-            <button
-              onClick={handleCopy}
-              className="px-3 py-1.5 bg-[#10b981] text-white text-sm rounded-lg hover:bg-[#059669] transition-all font-medium"
-            >
-              {copied ? "Copied!" : "Copy link"}
-            </button>
-          ) : (
-            <button
-              onClick={handlePublish}
-              disabled={publishing}
-              className="px-3 py-1.5 bg-[#6366f1] text-white text-sm rounded-lg hover:bg-[#5558e6] transition-all font-medium disabled:opacity-50"
-            >
-              {publishing ? "Publishing..." : "Publish"}
-            </button>
-          )}
-        </div>
-      </header>
+  const ideas: KeyIdea[] = deck.slides.map((s, i) => ({
+    id: s.id,
+    index: i + 1,
+    title: s.mainIdea,
+    subtitle: s.summary,
+  }));
 
-      {/* Main content */}
-      <main className="flex-1 flex flex-col items-center justify-center p-4">
+  return (
+    <div className="min-h-screen bg-[#f8fafc] flex">
+      {/* Sidebar */}
+      <Sidebar
+        title={deck.title}
+        ideas={ideas}
+        activeIndex={currentSlide}
+        onSelect={setCurrentSlide}
+        onBack={() => router.push("/")}
+      />
+
+      {/* Right column */}
+      <div className="flex-1 flex flex-col min-w-0">
+        {/* Top bar */}
+        <header className="flex items-center justify-between px-4 py-3 bg-white border-b border-[#e2e8f0]">
+          <div className="flex items-center gap-3">
+            <span className="text-sm text-[#94a3b8]">
+              {currentSlide + 1} / {deck.slides.length}
+            </span>
+          </div>
+          <div className="flex items-center gap-3">
+            {shareUrl ? (
+              <button
+                onClick={handleCopy}
+                className="px-3 py-1.5 bg-[#10b981] text-white text-sm rounded-lg hover:bg-[#059669] transition-all font-medium"
+              >
+                {copied ? "Copied!" : "Copy link"}
+              </button>
+            ) : (
+              <button
+                onClick={handlePublish}
+                disabled={publishing}
+                className="px-3 py-1.5 bg-[#6366f1] text-white text-sm rounded-lg hover:bg-[#5558e6] transition-all font-medium disabled:opacity-50"
+              >
+                {publishing ? "Publishing..." : "Publish"}
+              </button>
+            )}
+          </div>
+        </header>
+
+        {/* Main content */}
+        <main className="flex-1 flex flex-col items-center justify-center p-4">
         <div className="w-full max-w-4xl">
           {/* Image */}
           <div className="relative bg-white rounded-xl shadow-sm border border-[#e2e8f0] overflow-hidden aspect-[3/2] mb-4">
@@ -245,7 +255,8 @@ export default function DeckViewer() {
             ))}
           </div>
         </div>
-      </main>
+        </main>
+      </div>
     </div>
   );
 }
