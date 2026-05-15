@@ -58,6 +58,7 @@ model User {
   decks          Deck[]
   generationJobs GenerationJob[]
   costLedger     CostLedger[]
+  contentCache   ContentCache[]
 }
 
 model Deck {
@@ -70,6 +71,7 @@ model Deck {
   publishedAt DateTime?
   exaRaw      Json?
   quality     String    @default("medium") // low, medium, high
+  contentHash String?   // Hash of deck content for cache invalidation on edits
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
 
@@ -116,11 +118,17 @@ model GenerationJob {
 
 model ContentCache {
   id          String   @id @default(cuid())
+  userId      String
   urlHash     String   @unique
   url         String
-  exaResponse Json
+  deckId      String
+  contentHash String?  // Hash of deck content for invalidation on edits
   createdAt   DateTime @default(now())
   expiresAt   DateTime
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, urlHash])
 }
 
 model CostLedger {

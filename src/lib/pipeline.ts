@@ -2,6 +2,7 @@ import { extractArticleContent } from "./exa";
 import { openai } from "./openai";
 import { prisma } from "./prisma";
 import { INSIGHT_EXTRACTION_PROMPT, IMAGE_STYLE_PREFIX } from "./prompts";
+import { getCachedDeck, cacheDeck, hashDeckContent } from "./cache";
 
 function createLimiter(concurrency: number) {
   let active = 0;
@@ -81,6 +82,18 @@ export async function runPipeline(
   onProgress: ProgressCallback
 ) {
   try {
+    // Check cache first
+    const cachedDeckId = await getCachedDeck(userId, url);
+    if (cachedDeckId) {
+      // Link job to cached deck
+      await prisma.generationJob.update({
+        where: { id: jobId },
+        data: { deckId: cachedDeckId, status: "complete", completedAt: new Date() },
+      });
+      onProgress({ step: "complete", details: cachedDeckId });
+      return;
+    }
+
     // Check spending cap
     const withinBudget = await checkSpendingCap();
     if (!withinBudget) {
@@ -228,6 +241,17 @@ export async function runPipeline(
       where: { id: jobId },
       data: { status: "complete", completedAt: new Date() },
     });
+
+    // Cache the deck for future requests
+    const deckWithSlides = await prisma.deck.findUnique({
+      where: { id: deck.id },
+      include: { slides: true },
+    });
+    if (deckWithSlides) {
+      const contentHash = hashDeckContent(deckWithSlides);
+      await cacheDeck(userId, url, deck.id, contentHash);
+    }
+
     onProgress({ step: "complete", details: deck.id });
   } catch (err) {
     const errorMsg = err instanceof Error ? err.message : "Unknown error";
