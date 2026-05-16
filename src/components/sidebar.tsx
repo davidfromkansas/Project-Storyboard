@@ -8,46 +8,19 @@ export interface KeyIdea {
 }
 
 interface SidebarProps {
-  title: string;
   ideas: KeyIdea[];
   activeIndex: number;
   onSelect: (index: number) => void;
-  onBack: () => void;
 }
 
-export function Sidebar({ title, ideas, activeIndex, onSelect, onBack }: SidebarProps) {
+export function Sidebar({ ideas, activeIndex, onSelect }: SidebarProps) {
   return (
     <nav
       aria-label="Key ideas"
-      className="w-[380px] shrink-0 h-screen sticky top-0 bg-white border-r border-[#E2E8F0] flex flex-col overflow-hidden"
+      className="w-[380px] shrink-0 bg-white border-r border-[#E2E8F0] flex flex-col overflow-hidden"
     >
-      <SidebarHeader title={title} onBack={onBack} />
       <GlyphList ideas={ideas} activeIndex={activeIndex} onSelect={onSelect} />
     </nav>
-  );
-}
-
-function SidebarHeader({
-  title,
-  onBack,
-}: {
-  title: string;
-  onBack: () => void;
-}) {
-  return (
-    <div className="px-6 pt-6 pb-4">
-      <button
-        onClick={onBack}
-        className="inline-flex items-center gap-1 text-sm font-medium text-[#64748B] hover:text-[#0F172A] transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2563EB] rounded"
-      >
-        <span aria-hidden="true">&larr;</span> Back
-      </button>
-      <h1
-        className="mt-4 text-[22px] leading-[1.3] font-bold text-[#0F172A] line-clamp-3"
-      >
-        {title}
-      </h1>
-    </div>
   );
 }
 
