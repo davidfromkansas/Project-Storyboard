@@ -8,7 +8,7 @@ interface OriginalContentDrawerProps {
   sourceUrl: string;
   extractedTitle: string;
   extractedBody: string;
-  triggerRef: React.RefObject<HTMLButtonElement | null>;
+  triggerRef: React.RefObject<HTMLButtonElement>;
 }
 
 export function OriginalContentDrawer({

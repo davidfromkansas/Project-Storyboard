@@ -13,7 +13,7 @@ export function hashUrl(url: string): string {
 /**
  * Generate a hash for deck content (for future edit detection)
  */
-export function hashDeckContent(deck: any): string {
+export function hashDeckContent(deck: unknown): string {
   const contentString = JSON.stringify(deck);
   return crypto.createHash('sha256').update(contentString).digest('hex');
 }
