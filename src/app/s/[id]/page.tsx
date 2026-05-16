@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 
@@ -31,6 +31,7 @@ export default function SharePage() {
   const [error, setError] = useState<string | null>(null);
   const [showDetails, setShowDetails] = useState(false);
   const [showPrompt, setShowPrompt] = useState(false);
+  const touchStartRef = useRef<{ x: number; y: number } | null>(null);
 
   useEffect(() => {
     async function fetchDeck() {
@@ -59,6 +60,25 @@ export default function SharePage() {
     return () => window.removeEventListener("keydown", handleKey);
   }, [deck]);
 
+  function handleTouchStart(e: React.TouchEvent) {
+    const touch = e.touches[0];
+    touchStartRef.current = { x: touch.clientX, y: touch.clientY };
+  }
+
+  function handleTouchEnd(e: React.TouchEvent) {
+    if (!touchStartRef.current || !deck) return;
+    const touch = e.changedTouches[0];
+    const dx = touch.clientX - touchStartRef.current.x;
+    const dy = touch.clientY - touchStartRef.current.y;
+    touchStartRef.current = null;
+    if (Math.abs(dx) < 50 || Math.abs(dy) > Math.abs(dx)) return;
+    if (dx < 0) {
+      setCurrentSlide((c) => Math.min(c + 1, deck.slides.length - 1));
+    } else {
+      setCurrentSlide((c) => Math.max(c - 1, 0));
+    }
+  }
+
   if (loading) {
     return (
       <div className="min-h-screen bg-[#f8fafc] flex items-center justify-center">
@@ -80,31 +100,35 @@ export default function SharePage() {
   return (
     <div className="min-h-screen bg-[#f8fafc] flex flex-col">
       {/* Top bar */}
-      <header className="flex items-center justify-between px-4 py-3 bg-white border-b border-[#e2e8f0]">
-        <div className="flex items-center gap-3">
-          <div className="flex items-center gap-2">
+      <header className="flex items-center justify-between px-3 sm:px-4 py-2 sm:py-3 bg-white border-b border-[#e2e8f0]">
+        <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+          <div className="flex items-center gap-2 shrink-0">
             <div className="w-7 h-7 rounded-lg bg-[#6366f1] flex items-center justify-center">
               <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
               </svg>
             </div>
-            <span className="text-sm font-semibold text-[#1e293b]">Glyph</span>
+            <span className="text-sm font-semibold text-[#1e293b] hidden sm:inline">Glyph</span>
           </div>
-          <span className="text-[#cbd5e1]">|</span>
-          <h1 className="text-sm font-medium text-[#475569] truncate max-w-[250px]">
+          <span className="text-[#cbd5e1] hidden sm:inline">|</span>
+          <h1 className="text-xs sm:text-sm font-medium text-[#475569] truncate">
             {deck.title}
           </h1>
         </div>
-        <div className="text-sm text-[#94a3b8]">
+        <div className="text-xs sm:text-sm text-[#94a3b8] shrink-0">
           {currentSlide + 1} / {deck.slides.length}
         </div>
       </header>
 
       {/* Main content */}
-      <main className="flex-1 flex flex-col items-center justify-center p-4">
+      <main
+        className="flex-1 flex flex-col items-center justify-center p-2 sm:p-4"
+        onTouchStart={handleTouchStart}
+        onTouchEnd={handleTouchEnd}
+      >
         <div className="w-full max-w-4xl">
           {/* Image */}
-          <div className="relative bg-white rounded-xl shadow-sm border border-[#e2e8f0] overflow-hidden aspect-[3/2] mb-4">
+          <div className="relative bg-white rounded-xl shadow-sm border border-[#e2e8f0] overflow-hidden aspect-[4/3] sm:aspect-[3/2] mb-3 sm:mb-4">
             {slide?.imageUrl ? (
               <img
                 src={slide.imageUrl}
@@ -137,9 +161,9 @@ export default function SharePage() {
           </div>
 
           {/* Text panel */}
-          <div className="bg-white rounded-xl shadow-sm border border-[#e2e8f0] p-6 space-y-3">
-            <h2 className="text-xl font-bold text-[#1e293b]">{slide?.mainIdea}</h2>
-            <p className="text-[#475569] leading-relaxed">{slide?.summary}</p>
+          <div className="bg-white rounded-xl shadow-sm border border-[#e2e8f0] p-4 sm:p-6 space-y-3">
+            <h2 className="text-lg sm:text-xl font-bold text-[#1e293b]">{slide?.mainIdea}</h2>
+            <p className="text-sm sm:text-base text-[#475569] leading-relaxed">{slide?.summary}</p>
 
             {/* Supporting Ideas (collapsible) */}
             <button

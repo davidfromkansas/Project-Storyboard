@@ -49,7 +49,9 @@ export default function DeckViewer() {
   const [shareUrl, setShareUrl] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const originalContentButtonRef = useRef<HTMLButtonElement>(null);
+  const touchStartRef = useRef<{ x: number; y: number } | null>(null);
 
   useEffect(() => {
     async function fetchDeck() {
@@ -91,7 +93,7 @@ export default function DeckViewer() {
 
   useEffect(() => {
     const handleKey = (e: KeyboardEvent) => {
-      if (drawerOpen) return;
+      if (drawerOpen || sidebarOpen) return;
       if (e.key === "ArrowRight" || e.key === "ArrowDown") {
         setCurrentSlide((c) => Math.min(c + 1, (deck?.slides.length || 1) - 1));
       } else if (e.key === "ArrowLeft" || e.key === "ArrowUp") {
@@ -100,7 +102,26 @@ export default function DeckViewer() {
     };
     window.addEventListener("keydown", handleKey);
     return () => window.removeEventListener("keydown", handleKey);
-  }, [deck, drawerOpen]);
+  }, [deck, drawerOpen, sidebarOpen]);
+
+  function handleTouchStart(e: React.TouchEvent) {
+    const touch = e.touches[0];
+    touchStartRef.current = { x: touch.clientX, y: touch.clientY };
+  }
+
+  function handleTouchEnd(e: React.TouchEvent) {
+    if (!touchStartRef.current || !deck) return;
+    const touch = e.changedTouches[0];
+    const dx = touch.clientX - touchStartRef.current.x;
+    const dy = touch.clientY - touchStartRef.current.y;
+    touchStartRef.current = null;
+    if (Math.abs(dx) < 50 || Math.abs(dy) > Math.abs(dx)) return;
+    if (dx < 0) {
+      setCurrentSlide((c) => Math.min(c + 1, deck.slides.length - 1));
+    } else {
+      setCurrentSlide((c) => Math.max(c - 1, 0));
+    }
+  }
 
   if (loading) {
     return (
@@ -146,6 +167,7 @@ export default function DeckViewer() {
         onCopy={handleCopy}
         onOpenOriginalContent={() => setDrawerOpen(true)}
         originalContentButtonRef={originalContentButtonRef}
+        onToggleSidebar={() => setSidebarOpen(true)}
       />
 
       {/* Body: Sidebar + Main content */}
@@ -154,13 +176,19 @@ export default function DeckViewer() {
           ideas={ideas}
           activeIndex={currentSlide}
           onSelect={setCurrentSlide}
+          mobileOpen={sidebarOpen}
+          onMobileClose={() => setSidebarOpen(false)}
         />
 
         {/* Main content */}
-        <main className="flex-1 flex flex-col items-center justify-center p-4 overflow-y-auto">
+        <main
+          className="flex-1 flex flex-col items-center justify-center p-2 sm:p-4 overflow-y-auto"
+          onTouchStart={handleTouchStart}
+          onTouchEnd={handleTouchEnd}
+        >
           <div className="w-full max-w-4xl">
             {/* Image */}
-            <div className="relative bg-white rounded-xl shadow-sm border border-[#e2e8f0] overflow-hidden aspect-[3/2] mb-4">
+            <div className="relative bg-white rounded-xl shadow-sm border border-[#e2e8f0] overflow-hidden aspect-[4/3] sm:aspect-[3/2] mb-3 sm:mb-4">
               {slide?.imageUrl ? (
                 <img
                   src={slide.imageUrl}
@@ -198,9 +226,9 @@ export default function DeckViewer() {
             </div>
 
             {/* Text panel */}
-            <div className="bg-white rounded-xl shadow-sm border border-[#e2e8f0] p-6 space-y-3">
-              <h2 className="text-xl font-bold text-[#1e293b]">{slide?.mainIdea}</h2>
-              <p className="text-[#475569] leading-relaxed">{slide?.summary}</p>
+            <div className="bg-white rounded-xl shadow-sm border border-[#e2e8f0] p-4 sm:p-6 space-y-3">
+              <h2 className="text-lg sm:text-xl font-bold text-[#1e293b]">{slide?.mainIdea}</h2>
+              <p className="text-sm sm:text-base text-[#475569] leading-relaxed">{slide?.summary}</p>
 
               {/* Supporting Ideas (collapsible) */}
               <button

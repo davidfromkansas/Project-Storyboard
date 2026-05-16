@@ -50,27 +50,27 @@ export default function ProfilePage() {
   return (
     <div className="min-h-screen bg-[#f8fafc]">
       {/* Header */}
-      <header className="bg-white border-b border-[#e2e8f0] px-6 py-4">
+      <header className="bg-white border-b border-[#e2e8f0] px-4 sm:px-6 py-3 sm:py-4">
         <div className="max-w-5xl mx-auto flex items-center justify-between">
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3">
             <button
               onClick={() => router.push("/")}
-              className="text-[#64748b] hover:text-[#1e293b] transition-colors"
+              className="text-[#64748b] hover:text-[#1e293b] transition-colors text-sm sm:text-base"
             >
               ← Back
             </button>
-            <h1 className="text-xl font-bold text-[#1e293b]">My Decks</h1>
+            <h1 className="text-lg sm:text-xl font-bold text-[#1e293b]">My Decks</h1>
           </div>
           <button
             onClick={() => router.push("/")}
-            className="px-4 py-2 bg-[#6366f1] text-white text-sm rounded-lg hover:bg-[#5558e6] transition-all font-medium"
+            className="px-3 sm:px-4 py-2 bg-[#6366f1] text-white text-sm rounded-lg hover:bg-[#5558e6] transition-all font-medium"
           >
             + New Deck
           </button>
         </div>
       </header>
 
-      <main className="max-w-5xl mx-auto px-6 py-8 space-y-10">
+      <main className="max-w-5xl mx-auto px-4 sm:px-6 py-6 sm:py-8 space-y-8 sm:space-y-10">
         {decks.length === 0 ? (
           <div className="text-center py-20">
             <p className="text-[#94a3b8] text-lg mb-4">No decks yet</p>
@@ -117,7 +117,7 @@ function DeckGrid({
   router: ReturnType<typeof useRouter>;
 }) {
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+    <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
       {decks.map((deck) => (
         <button
           key={deck.id}

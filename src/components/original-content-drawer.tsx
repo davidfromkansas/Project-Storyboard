@@ -86,7 +86,7 @@ export function OriginalContentDrawer({
       <aside
         ref={drawerRef}
         aria-label="Original content"
-        className="fixed top-0 right-0 h-full w-[480px] max-w-full bg-white border-l border-[#E2E8F0] shadow-[-4px_0_24px_rgba(0,0,0,0.08)] z-50 flex flex-col animate-slide-in-right"
+        className="fixed top-0 right-0 h-full w-full sm:w-[480px] sm:max-w-full bg-white border-l border-[#E2E8F0] shadow-[-4px_0_24px_rgba(0,0,0,0.08)] z-50 flex flex-col animate-slide-in-right"
       >
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-[#E2E8F0] shrink-0">

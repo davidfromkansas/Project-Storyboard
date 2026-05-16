@@ -38,7 +38,7 @@ export function LandingPage({ user }: LandingPageProps) {
   return (
     <div className="min-h-screen bg-[#f8fafc] flex flex-col">
       {/* Top bar */}
-      <header className="flex items-center justify-between px-6 py-4 bg-white border-b border-[#e2e8f0]">
+      <header className="flex items-center justify-between px-4 sm:px-6 py-3 sm:py-4 bg-white border-b border-[#e2e8f0]">
         <div className="flex items-center gap-2">
           <div className="w-8 h-8 rounded-lg bg-[#6366f1] flex items-center justify-center">
             <svg
@@ -57,14 +57,14 @@ export function LandingPage({ user }: LandingPageProps) {
           </div>
           <span className="font-semibold text-[#1e293b]">Glyph</span>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 sm:gap-3">
           <a
             href="/profile"
             className="text-sm text-[#6366f1] hover:text-[#5558e6] font-medium transition-colors"
           >
             My Decks
           </a>
-          <span className="text-sm text-[#64748b]">{user.email}</span>
+          <span className="hidden sm:inline text-sm text-[#64748b]">{user.email}</span>
           <button
             onClick={() => {
               fetch("/api/auth/signout", { method: "POST" }).then(() => {
@@ -79,21 +79,21 @@ export function LandingPage({ user }: LandingPageProps) {
       </header>
 
       {/* Hero */}
-      <main className="flex-1 flex flex-col items-center justify-center px-4">
-        <div className="w-full max-w-2xl text-center space-y-8">
+      <main className="flex-1 flex flex-col items-center justify-center px-4 py-8 sm:py-0">
+        <div className="w-full max-w-2xl text-center space-y-6 sm:space-y-8">
           <div className="space-y-1">
             <span className="inline-block px-3 py-1 text-xs font-medium text-[#6366f1] bg-[#6366f1]/10 rounded-full">
               Powered by GPT-5.5 + gpt-image-2
             </span>
           </div>
 
-          <h1 className="text-4xl sm:text-5xl font-bold text-[#1e293b] leading-tight">
+          <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold text-[#1e293b] leading-tight">
             Turn Any Article into
             <br />
             <span className="text-[#6366f1]">Visual Infographics</span>
           </h1>
 
-          <p className="text-lg text-[#64748b] max-w-lg mx-auto">
+          <p className="text-base sm:text-lg text-[#64748b] max-w-lg mx-auto">
             Paste a URL and get 10-15 key insights extracted and visualized in
             whiteboard style. AI-powered, instant results.
           </p>
@@ -107,13 +107,13 @@ export function LandingPage({ user }: LandingPageProps) {
                 onChange={(e) => setUrl(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && handleGenerate()}
                 placeholder="https://example.com/blog-post"
-                className="w-full px-5 py-4 text-lg bg-white border border-[#e2e8f0] rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-[#6366f1]/30 focus:border-[#6366f1] transition-all text-[#1e293b] placeholder:text-[#cbd5e1]"
+                className="w-full px-4 sm:px-5 py-3 sm:py-4 text-base sm:text-lg bg-white border border-[#e2e8f0] rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-[#6366f1]/30 focus:border-[#6366f1] transition-all text-[#1e293b] placeholder:text-[#cbd5e1]"
               />
             </div>
             <button
               onClick={handleGenerate}
               disabled={!url.trim() || isGenerating}
-              className="w-full py-4 bg-[#6366f1] text-white font-semibold rounded-xl hover:bg-[#5558e6] transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-sm hover:shadow-md text-lg"
+              className="w-full py-3 sm:py-4 bg-[#6366f1] text-white font-semibold rounded-xl hover:bg-[#5558e6] transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-sm hover:shadow-md text-base sm:text-lg"
             >
               {isGenerating ? "Starting..." : "Generate Infographics"}
             </button>
