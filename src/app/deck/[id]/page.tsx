@@ -1,8 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { Sidebar, KeyIdea } from "@/components/sidebar";
+import { TopBar } from "@/components/top-bar";
+import { OriginalContentDrawer } from "@/components/original-content-drawer";
 
 interface Slide {
   id: string;
@@ -14,6 +16,14 @@ interface Slide {
   imageUrl: string | null;
 }
 
+interface ExaRaw {
+  url: string;
+  title: string;
+  author: string | null;
+  publishedDate: string | null;
+  text: string;
+}
+
 interface Deck {
   id: string;
   title: string;
@@ -22,6 +32,7 @@ interface Deck {
   createdAt: string;
   isPublished: boolean;
   shareId: string | null;
+  exaRaw: ExaRaw | null;
   slides: Slide[];
 }
 
@@ -37,6 +48,8 @@ export default function DeckViewer() {
   const [publishing, setPublishing] = useState(false);
   const [shareUrl, setShareUrl] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const originalContentButtonRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
     async function fetchDeck() {
@@ -78,6 +91,7 @@ export default function DeckViewer() {
 
   useEffect(() => {
     const handleKey = (e: KeyboardEvent) => {
+      if (drawerOpen) return;
       if (e.key === "ArrowRight" || e.key === "ArrowDown") {
         setCurrentSlide((c) => Math.min(c + 1, (deck?.slides.length || 1) - 1));
       } else if (e.key === "ArrowLeft" || e.key === "ArrowUp") {
@@ -86,7 +100,7 @@ export default function DeckViewer() {
     };
     window.addEventListener("keydown", handleKey);
     return () => window.removeEventListener("keydown", handleKey);
-  }, [deck]);
+  }, [deck, drawerOpen]);
 
   if (loading) {
     return (
@@ -116,147 +130,143 @@ export default function DeckViewer() {
     subtitle: s.summary,
   }));
 
+  const exaRaw = deck.exaRaw;
+
   return (
-    <div className="min-h-screen bg-[#f8fafc] flex">
-      {/* Sidebar */}
-      <Sidebar
+    <div className="h-screen flex flex-col bg-[#F8FAFC]">
+      {/* TopBar — full width, above everything */}
+      <TopBar
         title={deck.title}
-        ideas={ideas}
-        activeIndex={currentSlide}
-        onSelect={setCurrentSlide}
-        onBack={() => router.push("/")}
+        currentIndex={currentSlide + 1}
+        totalIdeas={deck.slides.length}
+        shareUrl={shareUrl}
+        publishing={publishing}
+        copied={copied}
+        onPublish={handlePublish}
+        onCopy={handleCopy}
+        onOpenOriginalContent={() => setDrawerOpen(true)}
+        originalContentButtonRef={originalContentButtonRef}
       />
 
-      {/* Right column */}
-      <div className="flex-1 flex flex-col min-w-0">
-        {/* Top bar */}
-        <header className="flex items-center justify-between px-4 py-3 bg-white border-b border-[#e2e8f0]">
-          <div className="flex items-center gap-3">
-            <span className="text-sm text-[#94a3b8]">
-              {currentSlide + 1} / {deck.slides.length}
-            </span>
-          </div>
-          <div className="flex items-center gap-3">
-            {shareUrl ? (
-              <button
-                onClick={handleCopy}
-                className="px-3 py-1.5 bg-[#10b981] text-white text-sm rounded-lg hover:bg-[#059669] transition-all font-medium"
-              >
-                {copied ? "Copied!" : "Copy link"}
-              </button>
-            ) : (
-              <button
-                onClick={handlePublish}
-                disabled={publishing}
-                className="px-3 py-1.5 bg-[#6366f1] text-white text-sm rounded-lg hover:bg-[#5558e6] transition-all font-medium disabled:opacity-50"
-              >
-                {publishing ? "Publishing..." : "Publish"}
-              </button>
-            )}
-          </div>
-        </header>
+      {/* Body: Sidebar + Main content */}
+      <div className="flex flex-1 min-h-0">
+        <Sidebar
+          ideas={ideas}
+          activeIndex={currentSlide}
+          onSelect={setCurrentSlide}
+        />
 
         {/* Main content */}
-        <main className="flex-1 flex flex-col items-center justify-center p-4">
-        <div className="w-full max-w-4xl">
-          {/* Image */}
-          <div className="relative bg-white rounded-xl shadow-sm border border-[#e2e8f0] overflow-hidden aspect-[3/2] mb-4">
-            {slide?.imageUrl ? (
-              <img
-                src={slide.imageUrl}
-                alt={slide.mainIdea}
-                className="w-full h-full object-contain"
-              />
-            ) : (
-              <div className="w-full h-full flex items-center justify-center text-[#94a3b8]">
-                <div className="text-center space-y-2">
-                  <svg className="w-12 h-12 mx-auto opacity-50" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                  </svg>
-                  <p className="text-sm">Image generating...</p>
+        <main className="flex-1 flex flex-col items-center justify-center p-4 overflow-y-auto">
+          <div className="w-full max-w-4xl">
+            {/* Image */}
+            <div className="relative bg-white rounded-xl shadow-sm border border-[#e2e8f0] overflow-hidden aspect-[3/2] mb-4">
+              {slide?.imageUrl ? (
+                <img
+                  src={slide.imageUrl}
+                  alt={slide.mainIdea}
+                  className="w-full h-full object-contain"
+                />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center text-[#94a3b8]">
+                  <div className="text-center space-y-2">
+                    <svg className="w-12 h-12 mx-auto opacity-50" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                    </svg>
+                    <p className="text-sm">Image generating...</p>
+                  </div>
                 </div>
-              </div>
-            )}
+              )}
 
-            {/* Navigation arrows */}
-            {currentSlide > 0 && (
-              <button
-                onClick={() => setCurrentSlide((c) => c - 1)}
-                className="absolute left-2 top-1/2 -translate-y-1/2 w-10 h-10 bg-white/90 rounded-full shadow flex items-center justify-center hover:bg-white transition-all"
-              >
-                ◄
-              </button>
-            )}
-            {currentSlide < deck.slides.length - 1 && (
-              <button
-                onClick={() => setCurrentSlide((c) => c + 1)}
-                className="absolute right-2 top-1/2 -translate-y-1/2 w-10 h-10 bg-white/90 rounded-full shadow flex items-center justify-center hover:bg-white transition-all"
-              >
-                ►
-              </button>
-            )}
-          </div>
-
-          {/* Text panel */}
-          <div className="bg-white rounded-xl shadow-sm border border-[#e2e8f0] p-6 space-y-3">
-            <h2 className="text-xl font-bold text-[#1e293b]">{slide?.mainIdea}</h2>
-            <p className="text-[#475569] leading-relaxed">{slide?.summary}</p>
-
-            {/* Supporting Ideas (collapsible) */}
-            <button
-              onClick={() => setShowDetails(!showDetails)}
-              className="text-sm text-[#6366f1] hover:underline"
-            >
-              {showDetails ? "Hide" : "Show"} supporting ideas ({slide?.supportingIdeas?.length || 0})
-            </button>
-
-            {showDetails && slide?.supportingIdeas && (
-              <div className="space-y-3 pt-2 border-t border-[#e2e8f0]">
-                {slide.supportingIdeas.map((si, i) => (
-                  <div key={i} className="space-y-1">
-                    <p className="text-sm font-semibold text-[#1e293b]">{si.Idea}</p>
-                    <p className="text-sm text-[#64748b]">{si.Details}</p>
-                  </div>
-                ))}
-              </div>
-            )}
-
-            {/* Infographic Prompt (collapsible) */}
-            {slide?.infographicPrompt && (
-              <>
+              {/* Navigation arrows */}
+              {currentSlide > 0 && (
                 <button
-                  onClick={() => setShowPrompt(!showPrompt)}
-                  className="text-sm text-[#8b5cf6] hover:underline"
+                  onClick={() => setCurrentSlide((c) => c - 1)}
+                  className="absolute left-2 top-1/2 -translate-y-1/2 w-10 h-10 bg-white/90 rounded-full shadow flex items-center justify-center hover:bg-white transition-all"
                 >
-                  {showPrompt ? "Hide" : "Show"} infographic prompt
+                  &#9668;
                 </button>
+              )}
+              {currentSlide < deck.slides.length - 1 && (
+                <button
+                  onClick={() => setCurrentSlide((c) => c + 1)}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 w-10 h-10 bg-white/90 rounded-full shadow flex items-center justify-center hover:bg-white transition-all"
+                >
+                  &#9658;
+                </button>
+              )}
+            </div>
 
-                {showPrompt && (
-                  <div className="pt-2 border-t border-[#e2e8f0]">
-                    <pre className="text-xs text-[#64748b] whitespace-pre-wrap font-mono bg-[#f1f5f9] rounded-lg p-3 max-h-48 overflow-y-auto">
-                      {slide.infographicPrompt}
-                    </pre>
-                  </div>
-                )}
-              </>
-            )}
-          </div>
+            {/* Text panel */}
+            <div className="bg-white rounded-xl shadow-sm border border-[#e2e8f0] p-6 space-y-3">
+              <h2 className="text-xl font-bold text-[#1e293b]">{slide?.mainIdea}</h2>
+              <p className="text-[#475569] leading-relaxed">{slide?.summary}</p>
 
-          {/* Dots navigation */}
-          <div className="flex items-center justify-center gap-1.5 mt-4">
-            {deck.slides.map((_, i) => (
+              {/* Supporting Ideas (collapsible) */}
               <button
-                key={i}
-                onClick={() => setCurrentSlide(i)}
-                className={`w-2.5 h-2.5 rounded-full transition-all ${
-                  i === currentSlide ? "bg-[#6366f1] scale-125" : "bg-[#cbd5e1] hover:bg-[#94a3b8]"
-                }`}
-              />
-            ))}
+                onClick={() => setShowDetails(!showDetails)}
+                className="text-sm text-[#6366f1] hover:underline"
+              >
+                {showDetails ? "Hide" : "Show"} supporting ideas ({slide?.supportingIdeas?.length || 0})
+              </button>
+
+              {showDetails && slide?.supportingIdeas && (
+                <div className="space-y-3 pt-2 border-t border-[#e2e8f0]">
+                  {slide.supportingIdeas.map((si, i) => (
+                    <div key={i} className="space-y-1">
+                      <p className="text-sm font-semibold text-[#1e293b]">{si.Idea}</p>
+                      <p className="text-sm text-[#64748b]">{si.Details}</p>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Infographic Prompt (collapsible) */}
+              {slide?.infographicPrompt && (
+                <>
+                  <button
+                    onClick={() => setShowPrompt(!showPrompt)}
+                    className="text-sm text-[#8b5cf6] hover:underline"
+                  >
+                    {showPrompt ? "Hide" : "Show"} infographic prompt
+                  </button>
+
+                  {showPrompt && (
+                    <div className="pt-2 border-t border-[#e2e8f0]">
+                      <pre className="text-xs text-[#64748b] whitespace-pre-wrap font-mono bg-[#f1f5f9] rounded-lg p-3 max-h-48 overflow-y-auto">
+                        {slide.infographicPrompt}
+                      </pre>
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+
+            {/* Dots navigation */}
+            <div className="flex items-center justify-center gap-1.5 mt-4">
+              {deck.slides.map((_, i) => (
+                <button
+                  key={i}
+                  onClick={() => setCurrentSlide(i)}
+                  className={`w-2.5 h-2.5 rounded-full transition-all ${
+                    i === currentSlide ? "bg-[#6366f1] scale-125" : "bg-[#cbd5e1] hover:bg-[#94a3b8]"
+                  }`}
+                />
+              ))}
+            </div>
           </div>
-        </div>
         </main>
       </div>
+
+      {/* Original content drawer */}
+      <OriginalContentDrawer
+        isOpen={drawerOpen}
+        onClose={() => setDrawerOpen(false)}
+        sourceUrl={deck.sourceUrl}
+        extractedTitle={exaRaw?.title ?? ""}
+        extractedBody={exaRaw?.text ?? ""}
+        triggerRef={originalContentButtonRef}
+      />
     </div>
   );
 }
