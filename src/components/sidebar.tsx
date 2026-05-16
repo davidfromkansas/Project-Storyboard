@@ -34,7 +34,7 @@ function GlyphList({
   onSelect: (index: number) => void;
 }) {
   return (
-    <ol className="flex-1 overflow-y-auto px-3 pb-6 space-y-1">
+    <ol className="flex-1 overflow-y-auto px-3 pt-3 pb-6 space-y-1">
       {ideas.map((idea, i) => (
         <GlyphListItem
           key={idea.id}
