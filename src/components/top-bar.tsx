@@ -1,6 +1,6 @@
 "use client";
 
-import { RefObject } from "react";
+import type { RefObject } from "react";
 import Link from "next/link";
 
 interface TopBarProps {
@@ -13,7 +13,7 @@ interface TopBarProps {
   onPublish: () => void;
   onCopy: () => void;
   onOpenOriginalContent: () => void;
-  originalContentButtonRef: RefObject<HTMLButtonElement | null>;
+  originalContentButtonRef: RefObject<HTMLButtonElement>;
 }
 
 export function TopBar({
