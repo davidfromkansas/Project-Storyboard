@@ -19,10 +19,91 @@ function isTwitterUrl(url: string): boolean {
   }
 }
 
-interface OembedResponse {
-  url: string;
-  author_name: string;
-  html: string;
+function parseTweetUrl(
+  url: string
+): { username: string; tweetId: string } | null {
+  const match = url.match(/(?:x\.com|twitter\.com)\/(\w+)\/status\/(\d+)/);
+  return match ? { username: match[1], tweetId: match[2] } : null;
+}
+
+interface FxTweetAuthor {
+  name: string;
+  screen_name: string;
+}
+
+interface FxArticleBlock {
+  text: string;
+  type: string;
+}
+
+interface FxTweetArticle {
+  title?: string;
+  content?: { blocks: FxArticleBlock[] };
+}
+
+interface FxTweetData {
+  text: string;
+  author: FxTweetAuthor;
+  created_at: string;
+  article?: FxTweetArticle;
+}
+
+interface FxTweetResponse {
+  code: number;
+  tweet?: FxTweetData;
+}
+
+function extractArticleText(article: FxTweetArticle): string {
+  if (!article.content?.blocks) return "";
+  return article.content.blocks
+    .map((block) => block.text)
+    .filter((text) => text.length > 0)
+    .join("\n\n");
+}
+
+async function extractTweetViaFxTwitter(
+  url: string
+): Promise<ExtractedContent> {
+  const parsed = parseTweetUrl(url);
+  if (!parsed) throw new Error("Invalid X/Twitter URL format");
+
+  const response = await fetch(
+    `https://api.fxtwitter.com/${parsed.username}/status/${parsed.tweetId}`
+  );
+
+  if (!response.ok) {
+    throw new Error(`FxTwitter API returned ${response.status}`);
+  }
+
+  const data = (await response.json()) as FxTweetResponse;
+  const tweet = data.tweet;
+
+  if (!tweet) {
+    throw new Error("Could not extract post — it may be deleted or private");
+  }
+
+  let text = tweet.text || "";
+  let title = `Post by @${tweet.author.screen_name}`;
+
+  if (tweet.article) {
+    const articleText = extractArticleText(tweet.article);
+    if (articleText.length > 0) {
+      text = articleText;
+      title = tweet.article.title || `Article by @${tweet.author.screen_name}`;
+    }
+  }
+
+  if (!text || text.length < 5) {
+    throw new Error("Could not extract post — it may be deleted or private");
+  }
+
+  return {
+    url,
+    title,
+    author: tweet.author.name || tweet.author.screen_name || null,
+    publishedDate: tweet.created_at || null,
+    text,
+  };
 }
 
 function stripHtml(html: string): string {
@@ -45,16 +126,20 @@ async function extractTweetViaOembed(url: string): Promise<ExtractedContent> {
 
   if (!response.ok) {
     throw new Error(
-      "Could not extract tweet content \u2014 the post may be deleted or private"
+      "Could not extract post — it may be deleted or private"
     );
   }
 
-  const data = (await response.json()) as OembedResponse;
+  const data = (await response.json()) as {
+    url: string;
+    author_name: string;
+    html: string;
+  };
   const text = stripHtml(data.html);
 
   if (!text || text.length < 10) {
     throw new Error(
-      "Could not extract tweet content \u2014 the post may be deleted or private"
+      "Could not extract post — it may be deleted or private"
     );
   }
 
@@ -67,11 +152,19 @@ async function extractTweetViaOembed(url: string): Promise<ExtractedContent> {
   };
 }
 
+async function extractTweetContent(url: string): Promise<ExtractedContent> {
+  try {
+    return await extractTweetViaFxTwitter(url);
+  } catch {
+    return extractTweetViaOembed(url);
+  }
+}
+
 export async function extractArticleContent(
   url: string
 ): Promise<ExtractedContent> {
   if (isTwitterUrl(url)) {
-    return extractTweetViaOembed(url);
+    return extractTweetContent(url);
   }
 
   const result = await exa.getContents([url], {
@@ -86,7 +179,7 @@ export async function extractArticleContent(
 
   if (!page.text || page.text.length < 100) {
     throw new Error(
-      "Content too short \u2014 this URL may be paywalled or inaccessible"
+      "Content too short — this URL may be paywalled or inaccessible"
     );
   }
 
