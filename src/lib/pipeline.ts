@@ -25,6 +25,46 @@ function createLimiter(concurrency: number) {
   };
 }
 
+const MAX_RETRIES = 3;
+const RETRY_BASE_DELAY_MS = 1000;
+
+async function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+async function generateImageWithRetry(
+  prompt: string,
+): Promise<string | null> {
+  for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+    try {
+      const image = await openai.images.generate({
+        model: "gpt-image-2",
+        prompt,
+        n: 1,
+        size: "1536x1024",
+        quality: "medium",
+      });
+
+      const imageData = image.data?.[0];
+      if (imageData && imageData.b64_json) {
+        return `data:image/png;base64,${imageData.b64_json}`;
+      }
+
+      console.warn(`[pipeline] Image generation attempt ${attempt}/${MAX_RETRIES}: no b64_json in response`);
+    } catch (err) {
+      console.error(`[pipeline] Image generation attempt ${attempt}/${MAX_RETRIES} failed:`, err);
+    }
+
+    if (attempt < MAX_RETRIES) {
+      const delay = RETRY_BASE_DELAY_MS * Math.pow(2, attempt - 1);
+      console.log(`[pipeline] Retrying image generation in ${delay}ms...`);
+      await sleep(delay);
+    }
+  }
+
+  return null;
+}
+
 export interface PipelineProgress {
   step: "extracting" | "analyzing" | "generating_images" | "complete" | "failed";
   current?: number;
@@ -189,41 +229,41 @@ export async function runPipeline(
       orderBy: { position: "asc" },
     });
 
-    const limit = createLimiter(8);
+    const limit = createLimiter(3);
     let completed = 0;
+
+    // Mark all slides as "generating"
+    await prisma.slide.updateMany({
+      where: { deckId: deck.id },
+      data: { imageStatus: "generating" },
+    });
 
     await Promise.all(
       slides.map((slide) =>
         limit(async () => {
-          try {
-            const fullPrompt = IMAGE_STYLE_PREFIX + slide.infographicPrompt;
-            const image = await openai.images.generate({
-              model: "gpt-image-2",
-              prompt: fullPrompt,
-              n: 1,
-              size: "1536x1024",
-              quality: "medium",
+          const fullPrompt = IMAGE_STYLE_PREFIX + slide.infographicPrompt;
+          const imageUrl = await generateImageWithRetry(fullPrompt);
+
+          if (imageUrl) {
+            await prisma.slide.update({
+              where: { id: slide.id },
+              data: {
+                imageUrl,
+                imageStatus: "completed",
+                imageVersions: [
+                  { url: imageUrl, prompt: slide.infographicPrompt, createdAt: new Date().toISOString() },
+                ],
+              },
             });
-
-            const imageData = image.data?.[0];
-            if (imageData && imageData.b64_json) {
-              // Store base64 as a data URL for now (Railway storage in future)
-              const imageUrl = `data:image/png;base64,${imageData.b64_json}`;
-              await prisma.slide.update({
-                where: { id: slide.id },
-                data: {
-                  imageUrl,
-                  imageVersions: [
-                    { url: imageUrl, prompt: slide.infographicPrompt, createdAt: new Date().toISOString() },
-                  ],
-                },
-              });
-            }
-
-            await logCost(userId, deck.id, slide.id, "gpt-image-2", "image_gen", COST_IMAGE_MEDIUM);
-          } catch (err) {
-            console.error(`[pipeline] Image generation failed for slide ${slide.position}:`, err);
+          } else {
+            await prisma.slide.update({
+              where: { id: slide.id },
+              data: { imageStatus: "failed" },
+            });
+            console.error(`[pipeline] All retries exhausted for slide ${slide.position}`);
           }
+
+          await logCost(userId, deck.id, slide.id, "gpt-image-2", "image_gen", COST_IMAGE_MEDIUM);
 
           completed++;
           onProgress({
@@ -242,14 +282,22 @@ export async function runPipeline(
       data: { status: "complete", completedAt: new Date() },
     });
 
-    // Cache the deck for future requests
-    const deckWithSlides = await prisma.deck.findUnique({
-      where: { id: deck.id },
-      include: { slides: true },
+    // Only cache decks where all images generated successfully
+    const failedSlideCount = await prisma.slide.count({
+      where: { deckId: deck.id, imageStatus: "failed" },
     });
-    if (deckWithSlides) {
-      const contentHash = hashDeckContent(deckWithSlides);
-      await cacheDeck(userId, url, deck.id, contentHash);
+
+    if (failedSlideCount === 0) {
+      const deckWithSlides = await prisma.deck.findUnique({
+        where: { id: deck.id },
+        include: { slides: true },
+      });
+      if (deckWithSlides) {
+        const contentHash = hashDeckContent(deckWithSlides);
+        await cacheDeck(userId, url, deck.id, contentHash);
+      }
+    } else {
+      console.warn(`[pipeline] Skipping cache for deck ${deck.id}: ${failedSlideCount} slide(s) have failed images`);
     }
 
     onProgress({ step: "complete", details: deck.id });
