@@ -10,11 +10,23 @@ export interface ExtractedContent {
   text: string;
 }
 
+function isTwitterUrl(url: string): boolean {
+  try {
+    const hostname = new URL(url).hostname.replace(/^www\./, "");
+    return hostname === "x.com" || hostname === "twitter.com";
+  } catch {
+    return false;
+  }
+}
+
 export async function extractArticleContent(
   url: string
 ): Promise<ExtractedContent> {
+  const isTweet = isTwitterUrl(url);
+
   const result = await exa.getContents([url], {
     text: true,
+    ...(isTweet && { maxAgeHours: 0, livecrawlTimeout: 15000 }),
   });
 
   if (!result.results || result.results.length === 0) {
@@ -23,9 +35,12 @@ export async function extractArticleContent(
 
   const page = result.results[0];
 
-  if (!page.text || page.text.length < 100) {
+  const minLength = isTweet ? 10 : 100;
+  if (!page.text || page.text.length < minLength) {
     throw new Error(
-      "Content too short — this URL may be paywalled or inaccessible"
+      isTweet
+        ? "Could not extract tweet content — the post may be deleted or private"
+        : "Content too short — this URL may be paywalled or inaccessible"
     );
   }
 
@@ -36,7 +51,7 @@ export async function extractArticleContent(
 
   return {
     url: page.url || url,
-    title: page.title || "Untitled Article",
+    title: page.title || (isTweet ? "Tweet/Post" : "Untitled Article"),
     author: page.author || null,
     publishedDate: page.publishedDate || null,
     text,
