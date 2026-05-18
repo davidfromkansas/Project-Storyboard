@@ -182,11 +182,11 @@ export default function DeckViewer() {
 
         {/* Main content */}
         <main
-          className="flex-1 flex flex-col items-center justify-center p-2 sm:p-4 overflow-y-auto"
+          className="flex-1 flex flex-col items-center p-2 sm:p-4 overflow-y-auto"
           onTouchStart={handleTouchStart}
           onTouchEnd={handleTouchEnd}
         >
-          <div className="w-full max-w-4xl">
+          <div className="w-full max-w-4xl my-auto">
             {/* Image */}
             <div className="relative bg-white rounded-xl shadow-sm border border-[#e2e8f0] overflow-hidden aspect-[4/3] sm:aspect-[3/2] mb-3 sm:mb-4">
               {slide?.imageUrl ? (
