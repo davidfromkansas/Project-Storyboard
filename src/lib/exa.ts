@@ -19,14 +19,62 @@ function isTwitterUrl(url: string): boolean {
   }
 }
 
+interface OembedResponse {
+  url: string;
+  author_name: string;
+  html: string;
+}
+
+function stripHtml(html: string): string {
+  return html
+    .replace(/<br\s*\/?>/gi, "\n")
+    .replace(/<[^>]+>/g, "")
+    .replace(/&amp;/g, "&")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&#39;/g, "'")
+    .replace(/&quot;/g, '"')
+    .replace(/&mdash;/g, "\u2014")
+    .trim();
+}
+
+async function extractTweetViaOembed(url: string): Promise<ExtractedContent> {
+  const oembedUrl = `https://publish.twitter.com/oembed?url=${encodeURIComponent(url)}&omit_script=true`;
+  const response = await fetch(oembedUrl);
+
+  if (!response.ok) {
+    throw new Error(
+      "Could not extract tweet content \u2014 the post may be deleted or private"
+    );
+  }
+
+  const data = (await response.json()) as OembedResponse;
+  const text = stripHtml(data.html);
+
+  if (!text || text.length < 10) {
+    throw new Error(
+      "Could not extract tweet content \u2014 the post may be deleted or private"
+    );
+  }
+
+  return {
+    url: data.url || url,
+    title: `Post by @${data.author_name}`,
+    author: data.author_name || null,
+    publishedDate: null,
+    text,
+  };
+}
+
 export async function extractArticleContent(
   url: string
 ): Promise<ExtractedContent> {
-  const isTweet = isTwitterUrl(url);
+  if (isTwitterUrl(url)) {
+    return extractTweetViaOembed(url);
+  }
 
   const result = await exa.getContents([url], {
     text: true,
-    ...(isTweet && { maxAgeHours: 0, livecrawlTimeout: 15000 }),
   });
 
   if (!result.results || result.results.length === 0) {
@@ -35,12 +83,9 @@ export async function extractArticleContent(
 
   const page = result.results[0];
 
-  const minLength = isTweet ? 10 : 100;
-  if (!page.text || page.text.length < minLength) {
+  if (!page.text || page.text.length < 100) {
     throw new Error(
-      isTweet
-        ? "Could not extract tweet content — the post may be deleted or private"
-        : "Content too short — this URL may be paywalled or inaccessible"
+      "Content too short \u2014 this URL may be paywalled or inaccessible"
     );
   }
 
@@ -51,7 +96,7 @@ export async function extractArticleContent(
 
   return {
     url: page.url || url,
-    title: page.title || (isTweet ? "Tweet/Post" : "Untitled Article"),
+    title: page.title || "Untitled Article",
     author: page.author || null,
     publishedDate: page.publishedDate || null,
     text,
