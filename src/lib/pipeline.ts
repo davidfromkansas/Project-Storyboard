@@ -85,7 +85,7 @@ interface InsightRaw {
 const COST_EXA = 0.001;
 const COST_GPT55_PER_DECK = 0.4;
 const COST_IMAGE_MEDIUM = 0.041;
-const GLOBAL_SPENDING_CAP = 10.0;
+const GLOBAL_SPENDING_CAP = 100.0;
 
 async function checkSpendingCap(): Promise<boolean> {
   const result = await prisma.costLedger.aggregate({
@@ -139,9 +139,9 @@ export async function runPipeline(
     if (!withinBudget) {
       await prisma.generationJob.update({
         where: { id: jobId },
-        data: { status: "failed", error: "Global spending cap reached ($10)" },
+        data: { status: "failed", error: "Global spending cap reached ($100)" },
       });
-      onProgress({ step: "failed", error: "Global spending cap reached ($10). No more generations allowed." });
+      onProgress({ step: "failed", error: "Global spending cap reached ($100). No more generations allowed." });
       return;
     }
 

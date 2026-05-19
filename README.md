@@ -112,7 +112,7 @@ Custom Google OAuth implementation (not NextAuth.js library):
 - Keyboard navigation (arrow keys)
 - Draft vs published deck management
 - Shareable public links
-- Global spending cap enforcement ($10)
+- Global spending cap enforcement ($100)
 - Content caching to avoid duplicate Exa calls
 
 ## Getting Started
