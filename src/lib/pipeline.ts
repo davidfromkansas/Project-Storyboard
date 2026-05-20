@@ -1,5 +1,5 @@
 import { extractArticleContent } from "./exa";
-import { openai } from "./openai";
+import { getOpenAI } from "./openai";
 import { prisma } from "./prisma";
 import { INSIGHT_EXTRACTION_PROMPT, IMAGE_STYLE_PREFIX } from "./prompts";
 import { getCachedDeck, cacheDeck, hashDeckContent } from "./cache";
@@ -37,7 +37,7 @@ async function generateImageWithRetry(
 ): Promise<string | null> {
   for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
     try {
-      const image = await openai.images.generate({
+      const image = await getOpenAI().images.generate({
         model: "gpt-image-2",
         prompt,
         n: 1,
@@ -162,7 +162,7 @@ export async function runPipeline(
       data: { status: "analyzing" },
     });
 
-    const completion = await openai.responses.create({
+    const completion = await getOpenAI().responses.create({
       model: "gpt-4.1",
       input: [
         { role: "system", content: INSIGHT_EXTRACTION_PROMPT },
