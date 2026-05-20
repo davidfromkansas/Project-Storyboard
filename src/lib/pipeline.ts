@@ -73,7 +73,7 @@ export interface PipelineProgress {
   error?: string;
 }
 
-export type ProgressCallback = (progress: PipelineProgress) => void;
+export type ProgressCallback = (progress: PipelineProgress) => void | Promise<void>;
 
 interface InsightRaw {
   "Main Idea": string;
@@ -146,21 +146,23 @@ export async function runPipeline(
     }
 
     // Step 1: Extract content via Exa
-    onProgress({ step: "extracting", details: "Extracting article content..." });
+    const extractProgress: PipelineProgress = { step: "extracting", details: "Extracting article content..." };
     await prisma.generationJob.update({
       where: { id: jobId },
-      data: { status: "extracting" },
+      data: { status: "extracting", progress: JSON.parse(JSON.stringify(extractProgress)) },
     });
+    onProgress(extractProgress);
 
     const content = await extractArticleContent(url);
     await logCost(userId, null, null, "exa", "extract", COST_EXA);
 
     // Step 2: Generate insights via GPT-5.5
-    onProgress({ step: "analyzing", details: "Analyzing key insights..." });
+    const analyzeProgress: PipelineProgress = { step: "analyzing", details: "Analyzing key insights..." };
     await prisma.generationJob.update({
       where: { id: jobId },
-      data: { status: "analyzing" },
+      data: { status: "analyzing", progress: JSON.parse(JSON.stringify(analyzeProgress)) },
     });
+    onProgress(analyzeProgress);
 
     const completion = await getOpenAI().responses.create({
       model: "gpt-4.1",
@@ -213,16 +215,17 @@ export async function runPipeline(
     }
 
     // Step 3: Generate images with gpt-image-2
-    onProgress({
+    const imgStartProgress: PipelineProgress = {
       step: "generating_images",
       current: 0,
       total: insights.length,
       details: `Generating infographic 0 of ${insights.length}...`,
-    });
+    };
     await prisma.generationJob.update({
       where: { id: jobId },
-      data: { status: "generating_images" },
+      data: { status: "generating_images", progress: JSON.parse(JSON.stringify(imgStartProgress)) },
     });
+    onProgress(imgStartProgress);
 
     const slides = await prisma.slide.findMany({
       where: { deckId: deck.id },
@@ -266,20 +269,26 @@ export async function runPipeline(
           await logCost(userId, deck.id, slide.id, "gpt-image-2", "image_gen", COST_IMAGE_MEDIUM);
 
           completed++;
-          onProgress({
+          const imgProgress: PipelineProgress = {
             step: "generating_images",
             current: completed,
             total: slides.length,
             details: `Generating infographic ${completed} of ${slides.length}...`,
+          };
+          await prisma.generationJob.update({
+            where: { id: jobId },
+            data: { progress: JSON.parse(JSON.stringify(imgProgress)) },
           });
+          onProgress(imgProgress);
         })
       )
     );
 
     // Complete
+    const completeProgress: PipelineProgress = { step: "complete", details: deck.id };
     await prisma.generationJob.update({
       where: { id: jobId },
-      data: { status: "complete", completedAt: new Date() },
+      data: { status: "complete", completedAt: new Date(), progress: JSON.parse(JSON.stringify(completeProgress)) },
     });
 
     // Only cache decks where all images generated successfully
@@ -300,14 +309,15 @@ export async function runPipeline(
       console.warn(`[pipeline] Skipping cache for deck ${deck.id}: ${failedSlideCount} slide(s) have failed images`);
     }
 
-    onProgress({ step: "complete", details: deck.id });
+    onProgress(completeProgress);
   } catch (err) {
     const errorMsg = err instanceof Error ? err.message : "Unknown error";
     console.error("[pipeline] Error:", err);
+    const failedProgress: PipelineProgress = { step: "failed", error: errorMsg };
     await prisma.generationJob.update({
       where: { id: jobId },
-      data: { status: "failed", error: errorMsg },
+      data: { status: "failed", error: errorMsg, progress: JSON.parse(JSON.stringify(failedProgress)) },
     });
-    onProgress({ step: "failed", error: errorMsg });
+    onProgress(failedProgress);
   }
 }
