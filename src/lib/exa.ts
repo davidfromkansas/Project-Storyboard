@@ -1,6 +1,13 @@
 import Exa from "exa-js";
 
-const exa = new Exa(process.env.EXA_API_KEY);
+let _exa: Exa | null = null;
+
+function getExa(): Exa {
+  if (!_exa) {
+    _exa = new Exa(process.env.EXA_API_KEY);
+  }
+  return _exa;
+}
 
 export interface ExtractedContent {
   url: string;
@@ -167,7 +174,7 @@ export async function extractArticleContent(
     return extractTweetContent(url);
   }
 
-  const result = await exa.getContents([url], {
+  const result = await getExa().getContents([url], {
     text: true,
   });
 
