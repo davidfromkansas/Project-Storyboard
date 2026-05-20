@@ -1,4 +1,5 @@
 import { NextRequest } from "next/server";
+import { getSession } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { runPipeline } from "@/lib/pipeline";
 
@@ -9,6 +10,11 @@ export async function POST(
   _request: NextRequest,
   { params }: { params: Promise<{ jobId: string }> }
 ) {
+  const session = await getSession();
+  if (!session?.user) {
+    return new Response("Unauthorized", { status: 401 });
+  }
+
   const { jobId } = await params;
 
   // Atomically claim the job — only one invocation can proceed

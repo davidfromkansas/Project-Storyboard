@@ -30,7 +30,8 @@ export async function GET(
   // If job is queued, trigger the pipeline run via internal API
   if (job.status === "queued") {
     const baseUrl = getBaseUrl(request);
-    triggerPipelineRun(baseUrl, jobId);
+    const cookie = request.headers.get("cookie") || "";
+    triggerPipelineRun(baseUrl, jobId, cookie);
   }
 
   // If job already complete or failed, return current state immediately
@@ -161,11 +162,12 @@ function getBaseUrl(request: NextRequest): string {
   return `${protocol}://${host}`;
 }
 
-function triggerPipelineRun(baseUrl: string, jobId: string) {
+function triggerPipelineRun(baseUrl: string, jobId: string, cookie: string) {
   // Fire-and-forget: trigger the pipeline run endpoint
   // This creates a separate serverless function invocation on Vercel
   fetch(`${baseUrl}/api/generate/${jobId}/run`, {
     method: "POST",
+    headers: { cookie },
   }).catch((err) => {
     console.error("[stream] Failed to trigger pipeline run:", err);
   });
