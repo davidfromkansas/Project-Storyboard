@@ -4,27 +4,6 @@ import { prisma } from "./prisma";
 import { INSIGHT_EXTRACTION_PROMPT, IMAGE_STYLE_PREFIX } from "./prompts";
 import { getCachedDeck, cacheDeck, hashDeckContent } from "./cache";
 
-function createLimiter(concurrency: number) {
-  let active = 0;
-  const queue: Array<() => void> = [];
-  return <T>(fn: () => Promise<T>): Promise<T> => {
-    return new Promise<T>((resolve, reject) => {
-      const run = () => {
-        active++;
-        fn()
-          .then(resolve)
-          .catch(reject)
-          .finally(() => {
-            active--;
-            if (queue.length > 0) queue.shift()!();
-          });
-      };
-      if (active < concurrency) run();
-      else queue.push(run);
-    });
-  };
-}
-
 const MAX_RETRIES = 3;
 const RETRY_BASE_DELAY_MS = 1000;
 
@@ -214,26 +193,21 @@ export async function runPipeline(
       });
     }
 
-    // Step 3: Generate images with gpt-image-2
-    const imgStartProgress: PipelineProgress = {
-      step: "generating_images",
-      current: 0,
-      total: insights.length,
-      details: `Generating infographic 0 of ${insights.length}...`,
-    };
+    // Mark job complete early so the user is redirected to the deck viewer
+    const completeProgress: PipelineProgress = { step: "complete", details: deck.id };
     await prisma.generationJob.update({
       where: { id: jobId },
-      data: { status: "generating_images", progress: JSON.parse(JSON.stringify(imgStartProgress)) },
+      data: { status: "complete", completedAt: new Date(), progress: JSON.parse(JSON.stringify(completeProgress)) },
     });
-    onProgress(imgStartProgress);
+    onProgress(completeProgress);
 
+    // Step 3: Generate images with gpt-image-2 in ordered batches
+    // Images generate after the user has been redirected to the deck viewer.
+    // The deck viewer polls for updates as images complete.
     const slides = await prisma.slide.findMany({
       where: { deckId: deck.id },
       orderBy: { position: "asc" },
     });
-
-    const limit = createLimiter(3);
-    let completed = 0;
 
     // Mark all slides as "generating"
     await prisma.slide.updateMany({
@@ -241,9 +215,13 @@ export async function runPipeline(
       data: { imageStatus: "generating" },
     });
 
-    await Promise.all(
-      slides.map((slide) =>
-        limit(async () => {
+    // Generate in ordered batches of 3 so early slides are ready first
+    const BATCH_SIZE = 3;
+    for (let batchStart = 0; batchStart < slides.length; batchStart += BATCH_SIZE) {
+      const batch = slides.slice(batchStart, batchStart + BATCH_SIZE);
+
+      await Promise.all(
+        batch.map(async (slide) => {
           const fullPrompt = IMAGE_STYLE_PREFIX + slide.infographicPrompt;
           const imageUrl = await generateImageWithRetry(fullPrompt);
 
@@ -267,31 +245,11 @@ export async function runPipeline(
           }
 
           await logCost(userId, deck.id, slide.id, "gpt-image-2", "image_gen", COST_IMAGE_MEDIUM);
-
-          completed++;
-          const imgProgress: PipelineProgress = {
-            step: "generating_images",
-            current: completed,
-            total: slides.length,
-            details: `Generating infographic ${completed} of ${slides.length}...`,
-          };
-          await prisma.generationJob.update({
-            where: { id: jobId },
-            data: { progress: JSON.parse(JSON.stringify(imgProgress)) },
-          });
-          onProgress(imgProgress);
         })
-      )
-    );
+      );
+    }
 
-    // Complete
-    const completeProgress: PipelineProgress = { step: "complete", details: deck.id };
-    await prisma.generationJob.update({
-      where: { id: jobId },
-      data: { status: "complete", completedAt: new Date(), progress: JSON.parse(JSON.stringify(completeProgress)) },
-    });
-
-    // Only cache decks where all images generated successfully
+    // Cache deck if all images generated successfully
     const failedSlideCount = await prisma.slide.count({
       where: { deckId: deck.id, imageStatus: "failed" },
     });
@@ -308,8 +266,6 @@ export async function runPipeline(
     } else {
       console.warn(`[pipeline] Skipping cache for deck ${deck.id}: ${failedSlideCount} slide(s) have failed images`);
     }
-
-    onProgress(completeProgress);
   } catch (err) {
     const errorMsg = err instanceof Error ? err.message : "Unknown error";
     console.error("[pipeline] Error:", err);
