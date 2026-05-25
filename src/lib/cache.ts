@@ -3,6 +3,7 @@ import crypto from 'crypto';
 import { ProcessedContent } from './content-preprocessor';
 import { Prisma } from '@/generated/prisma/client';
 
+// Trigger redeploy to regenerate Prisma client with updated schema
 const CACHE_TTL_DAYS = parseInt(process.env.CACHE_TTL_DAYS || '30', 10);
 
 /**
