@@ -1,4 +1,4 @@
-import { openai } from "./openai";
+import { getOpenAI } from "./openai";
 import { CONTENT_PREPROCESSOR_PROMPT } from "./prompts/index";
 
 export interface ProcessedContent {
@@ -12,7 +12,7 @@ export interface ProcessedContent {
 
 export async function preprocessContent(rawContent: string): Promise<ProcessedContent> {
   try {
-    const completion = await openai.responses.create({
+    const completion = await getOpenAI().responses.create({
       model: "gpt-4.1",
       input: [
         { role: "system", content: CONTENT_PREPROCESSOR_PROMPT },
