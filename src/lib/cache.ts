@@ -1,7 +1,7 @@
 import { prisma } from './prisma';
 import crypto from 'crypto';
 import { ProcessedContent } from './content-preprocessor';
-import { Prisma } from '@generated/prisma/client';
+import { Prisma } from '@/generated/prisma/client';
 
 const CACHE_TTL_DAYS = parseInt(process.env.CACHE_TTL_DAYS || '30', 10);
 
@@ -79,7 +79,7 @@ export async function cacheDeck(
     update: {
       deckId,
       contentHash,
-      processedContent: processedContent as Prisma.JsonValue,
+      processedContent: processedContent as unknown as Prisma.InputJsonValue,
       expiresAt,
     },
     create: {
@@ -88,7 +88,7 @@ export async function cacheDeck(
       url,
       deckId,
       contentHash,
-      processedContent: processedContent as Prisma.JsonValue,
+      processedContent: processedContent as unknown as Prisma.InputJsonValue,
       expiresAt,
     },
   });
