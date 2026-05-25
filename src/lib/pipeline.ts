@@ -1,7 +1,7 @@
 import { extractArticleContent } from "./exa";
 import { openai } from "./openai";
 import { prisma } from "./prisma";
-import { INSIGHT_EXTRACTION_PROMPT, MAGAZINE_STYLE_PROMPT } from "./prompts/index";
+import { INSIGHT_EXTRACTION_PROMPT, IMAGE_STYLE_PREFIX } from "./prompts/index";
 import { getCachedDeck, cacheDeck, hashDeckContent } from "./cache";
 import { preprocessContent } from "./content-preprocessor";
 
@@ -218,7 +218,7 @@ export async function runPipeline(
       slides.map((slide) =>
         limit(async () => {
           try {
-            const fullPrompt = MAGAZINE_STYLE_PROMPT + slide.infographicPrompt;
+            const fullPrompt = IMAGE_STYLE_PREFIX + slide.infographicPrompt;
             const image = await openai.images.generate({
               model: "gpt-image-2",
               prompt: fullPrompt,
