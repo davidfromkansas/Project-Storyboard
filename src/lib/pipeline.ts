@@ -269,6 +269,7 @@ export async function runPipeline(
           await logCost(userId, deck.id, slide.id, "gpt-image-2", "image_gen", COST_IMAGE_MEDIUM);
         })
       );
+    }
 
     // Complete
     await prisma.generationJob.update({
