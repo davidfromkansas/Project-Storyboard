@@ -1,5 +1,6 @@
 import { prisma } from './prisma';
 import crypto from 'crypto';
+import { ProcessedContent } from './content-preprocessor';
 
 const CACHE_TTL_DAYS = parseInt(process.env.CACHE_TTL_DAYS || '30', 10);
 
@@ -61,7 +62,7 @@ export async function cacheDeck(
   url: string,
   deckId: string,
   contentHash?: string,
-  processedContent?: any,
+  processedContent?: ProcessedContent,
 ): Promise<void> {
   const urlHash = hashUrl(url);
   const expiresAt = new Date();

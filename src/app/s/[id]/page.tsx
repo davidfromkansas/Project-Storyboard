@@ -193,7 +193,7 @@ export default function SharePage() {
                       <div className="space-y-1.5 pt-1">
                         {si["Key Quotes"].map((q, qi) => (
                           <blockquote key={qi} className="border-l-2 border-[#6366f1]/30 pl-3 py-0.5">
-                            <p className="text-xs text-[#475569] italic">"{q.text}"</p>
+                            <p className="text-xs text-[#475569] italic">&ldquo;{q.text}&rdquo;</p>
                             {q.context && <p className="text-xs text-[#94a3b8] mt-0.5">{q.context}</p>}
                           </blockquote>
                         ))}
