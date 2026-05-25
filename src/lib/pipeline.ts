@@ -268,7 +268,6 @@ export async function runPipeline(
 
           await logCost(userId, deck.id, slide.id, "gpt-image-2", "image_gen", COST_IMAGE_MEDIUM);
         })
-<<<<<<< HEAD
       )
     );
 
@@ -277,19 +276,6 @@ export async function runPipeline(
       where: { id: jobId },
       data: { status: "complete", completedAt: new Date() },
     });
-
-    // Cache the deck for future requests
-    const deckWithSlides = await prisma.deck.findUnique({
-      where: { id: deck.id },
-      include: { slides: true },
-    });
-    if (deckWithSlides) {
-      const contentHash = hashDeckContent(deckWithSlides);
-      await cacheDeck(userId, url, deck.id, contentHash, processedContent);
-=======
-      );
->>>>>>> origin/main
-    }
 
     // Cache deck if all images generated successfully
     const failedSlideCount = await prisma.slide.count({
@@ -303,7 +289,7 @@ export async function runPipeline(
       });
       if (deckWithSlides) {
         const contentHash = hashDeckContent(deckWithSlides);
-        await cacheDeck(userId, url, deck.id, contentHash);
+        await cacheDeck(userId, url, deck.id, contentHash, processedContent);
       }
     } else {
       console.warn(`[pipeline] Skipping cache for deck ${deck.id}: ${failedSlideCount} slide(s) have failed images`);
