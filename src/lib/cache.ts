@@ -61,6 +61,7 @@ export async function cacheDeck(
   url: string,
   deckId: string,
   contentHash?: string,
+  processedContent?: any,
 ): Promise<void> {
   const urlHash = hashUrl(url);
   const expiresAt = new Date();
@@ -76,6 +77,7 @@ export async function cacheDeck(
     update: {
       deckId,
       contentHash,
+      processedContent,
       expiresAt,
     },
     create: {
@@ -84,6 +86,7 @@ export async function cacheDeck(
       url,
       deckId,
       contentHash,
+      processedContent,
       expiresAt,
     },
   });

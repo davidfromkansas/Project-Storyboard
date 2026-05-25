@@ -9,7 +9,7 @@ interface Slide {
   position: number;
   mainIdea: string;
   summary: string;
-  supportingIdeas: Array<{ Idea: string; Details: string }>;
+  supportingIdeas: Array<{ Idea: string; Details: string; "Key Quotes"?: Array<{ text: string; context: string }> }>;
   infographicPrompt: string;
   imageUrl: string | null;
 }
@@ -179,6 +179,16 @@ export default function SharePage() {
                   <div key={i} className="space-y-1">
                     <p className="text-sm font-semibold text-[#1e293b]">{si.Idea}</p>
                     <p className="text-sm text-[#64748b]">{si.Details}</p>
+                    {si["Key Quotes"] && si["Key Quotes"].length > 0 && (
+                      <div className="space-y-1.5 pt-1">
+                        {si["Key Quotes"].map((q, qi) => (
+                          <blockquote key={qi} className="border-l-2 border-[#6366f1]/30 pl-3 py-0.5">
+                            <p className="text-xs text-[#475569] italic">"{q.text}"</p>
+                            {q.context && <p className="text-xs text-[#94a3b8] mt-0.5">{q.context}</p>}
+                          </blockquote>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>

@@ -1,8 +1,9 @@
 import { extractArticleContent } from "./exa";
 import { openai } from "./openai";
 import { prisma } from "./prisma";
-import { INSIGHT_EXTRACTION_PROMPT, IMAGE_STYLE_PREFIX } from "./prompts";
+import { INSIGHT_EXTRACTION_PROMPT, MAGAZINE_STYLE_PROMPT } from "./prompts/index";
 import { getCachedDeck, cacheDeck, hashDeckContent } from "./cache";
+import { preprocessContent } from "./content-preprocessor";
 
 function createLimiter(concurrency: number) {
   let active = 0;
@@ -38,14 +39,14 @@ export type ProgressCallback = (progress: PipelineProgress) => void;
 interface InsightRaw {
   "Main Idea": string;
   Summary: string;
-  "Supporting Ideas": Array<{ Idea: string; Details: string }>;
+  "Supporting Ideas": Array<{ Idea: string; Details: string; "Key Quotes"?: Array<{ text: string; context: string }> }>;
   "Infographic Prompt": string;
 }
 
 const COST_EXA = 0.001;
 const COST_GPT55_PER_DECK = 0.4;
 const COST_IMAGE_MEDIUM = 0.041;
-const GLOBAL_SPENDING_CAP = 10.0;
+const GLOBAL_SPENDING_CAP = 100.0;
 
 async function checkSpendingCap(): Promise<boolean> {
   const result = await prisma.costLedger.aggregate({
@@ -79,19 +80,22 @@ export async function runPipeline(
   url: string,
   userId: string,
   jobId: string,
-  onProgress: ProgressCallback
+  onProgress: ProgressCallback,
+  force: boolean = false
 ) {
   try {
-    // Check cache first
-    const cachedDeckId = await getCachedDeck(userId, url);
-    if (cachedDeckId) {
-      // Link job to cached deck
-      await prisma.generationJob.update({
-        where: { id: jobId },
-        data: { deckId: cachedDeckId, status: "complete", completedAt: new Date() },
-      });
-      onProgress({ step: "complete", details: cachedDeckId });
-      return;
+    // Check cache first (skip if force=true)
+    if (!force) {
+      const cachedDeckId = await getCachedDeck(userId, url);
+      if (cachedDeckId) {
+        // Link job to cached deck
+        await prisma.generationJob.update({
+          where: { id: jobId },
+          data: { deckId: cachedDeckId, status: "complete", completedAt: new Date() },
+        });
+        onProgress({ step: "complete", details: cachedDeckId });
+        return;
+      }
     }
 
     // Check spending cap
@@ -115,23 +119,41 @@ export async function runPipeline(
     const content = await extractArticleContent(url);
     await logCost(userId, null, null, "exa", "extract", COST_EXA);
 
-    // Step 2: Generate insights via GPT-5.5
+    // Step 1.5: Pre-process content (extract metadata)
+    onProgress({ step: "extracting", details: "Analyzing article structure..." });
+    const processedContent = await preprocessContent(content.text);
+    console.log(`[preprocessor] Content type: ${processedContent.contentType}, ${processedContent.structure.length} sections, ${processedContent.statistics.length} statistics, ${processedContent.quotes.length} quotes, ${processedContent.comparisons.length} comparisons, ${processedContent.processes.length} processes`);
+
+    // Step 2: Generate insights using raw text + supplementary metadata
     onProgress({ step: "analyzing", details: "Analyzing key insights..." });
     await prisma.generationJob.update({
       where: { id: jobId },
       data: { status: "analyzing" },
     });
 
+    const userMessage = `## Article Text\n\n${content.text}\n\n## Supplementary Metadata\n\n${JSON.stringify(processedContent, null, 2)}`;
+
     const completion = await openai.responses.create({
       model: "gpt-4.1",
       input: [
         { role: "system", content: INSIGHT_EXTRACTION_PROMPT },
-        { role: "user", content: content.text },
+        { role: "user", content: userMessage },
       ],
       text: { format: { type: "json_object" } },
+      max_output_tokens: 16000,
     });
 
-    const parsed = JSON.parse(completion.output_text);
+    let parsed;
+    try {
+      parsed = JSON.parse(completion.output_text);
+    } catch (error) {
+      console.error("[pipeline] JSON parse error:", error);
+      console.error("[pipeline] Output length:", completion.output_text.length);
+      console.error("[pipeline] Output preview:", completion.output_text.slice(0, 500));
+      console.error("[pipeline] Output around error position:", completion.output_text.slice(11000, 11200));
+      throw new Error(`Failed to parse insight extraction JSON: ${error instanceof Error ? error.message : String(error)}`);
+    }
+
     const insights: InsightRaw[] = parsed.insights || parsed;
     await logCost(userId, null, null, "gpt-5.5", "insights", COST_GPT55_PER_DECK);
 
@@ -196,7 +218,7 @@ export async function runPipeline(
       slides.map((slide) =>
         limit(async () => {
           try {
-            const fullPrompt = IMAGE_STYLE_PREFIX + slide.infographicPrompt;
+            const fullPrompt = MAGAZINE_STYLE_PROMPT + slide.infographicPrompt;
             const image = await openai.images.generate({
               model: "gpt-image-2",
               prompt: fullPrompt,
@@ -249,7 +271,7 @@ export async function runPipeline(
     });
     if (deckWithSlides) {
       const contentHash = hashDeckContent(deckWithSlides);
-      await cacheDeck(userId, url, deck.id, contentHash);
+      await cacheDeck(userId, url, deck.id, contentHash, processedContent);
     }
 
     onProgress({ step: "complete", details: deck.id });

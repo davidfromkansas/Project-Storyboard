@@ -15,6 +15,8 @@ export async function GET(
   }
 
   const { jobId } = await params;
+  const { searchParams } = new URL(request.url);
+  const force = searchParams.get('force') === 'true';
 
   const job = await prisma.generationJob.findUnique({
     where: { id: jobId },
@@ -68,7 +70,7 @@ export async function GET(
             send({ step: "failed", error: "User not found" });
             return;
           }
-          runPipeline(job.sourceUrl, user.id, jobId, send);
+          runPipeline(job.sourceUrl, user.id, jobId, send, force);
         })
         .catch((err) => {
           send({ step: "failed", error: err.message });

@@ -11,7 +11,7 @@ interface Slide {
   position: number;
   mainIdea: string;
   summary: string;
-  supportingIdeas: Array<{ Idea: string; Details: string }>;
+  supportingIdeas: Array<{ Idea: string; Details: string; "Key Quotes"?: Array<{ text: string; context: string }> }>;
   infographicPrompt: string;
   imageUrl: string | null;
 }
@@ -182,11 +182,11 @@ export default function DeckViewer() {
 
         {/* Main content */}
         <main
-          className="flex-1 flex flex-col items-center p-2 sm:p-4 overflow-y-auto"
+          className="flex-1 flex flex-col items-center justify-center p-2 sm:p-4 overflow-y-auto"
           onTouchStart={handleTouchStart}
           onTouchEnd={handleTouchEnd}
         >
-          <div className="w-full max-w-4xl my-auto">
+          <div className="w-full max-w-4xl">
             {/* Image */}
             <div className="relative bg-white rounded-xl shadow-sm border border-[#e2e8f0] overflow-hidden aspect-[4/3] sm:aspect-[3/2] mb-3 sm:mb-4">
               {slide?.imageUrl ? (
@@ -244,6 +244,16 @@ export default function DeckViewer() {
                     <div key={i} className="space-y-1">
                       <p className="text-sm font-semibold text-[#1e293b]">{si.Idea}</p>
                       <p className="text-sm text-[#64748b]">{si.Details}</p>
+                      {si["Key Quotes"] && si["Key Quotes"].length > 0 && (
+                        <div className="space-y-1.5 pt-1">
+                          {si["Key Quotes"].map((q, qi) => (
+                            <blockquote key={qi} className="border-l-2 border-[#6366f1]/30 pl-3 py-0.5">
+                              <p className="text-xs text-[#475569] italic">&quot;{q.text}&quot;</p>
+                              {q.context && <p className="text-xs text-[#94a3b8] mt-0.5">{q.context}</p>}
+                            </blockquote>
+                          ))}
+                        </div>
+                      )}
                     </div>
                   ))}
                 </div>

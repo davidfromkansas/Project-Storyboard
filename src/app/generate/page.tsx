@@ -60,6 +60,7 @@ function GeneratePageInner() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const url = searchParams.get("url");
+  const force = searchParams.get("force") === "true";
   const [progress, setProgress] = useState<Progress>({ step: "extracting" });
   const [messageIndex, setMessageIndex] = useState(0);
   const started = useRef(false);
@@ -105,7 +106,10 @@ function GeneratePageInner() {
       const { jobId } = await res.json();
 
       // Step 2: Connect to SSE stream
-      const evtSource = new EventSource(`/api/generate/${jobId}/stream`);
+      const streamUrl = force
+        ? `/api/generate/${jobId}/stream?force=true`
+        : `/api/generate/${jobId}/stream`;
+      const evtSource = new EventSource(streamUrl);
 
       evtSource.onmessage = (event) => {
         const data: Progress = JSON.parse(event.data);

@@ -27,9 +27,9 @@ export async function POST(request: NextRequest) {
     _sum: { estimatedCost: true },
   });
   const totalSpend = Number(result._sum.estimatedCost ?? 0);
-  if (totalSpend >= 10.0) {
+  if (totalSpend >= 100.0) {
     return NextResponse.json(
-      { error: "Global spending cap reached ($10). No more generations allowed." },
+      { error: "Global spending cap reached ($100). No more generations allowed." },
       { status: 429 }
     );
   }

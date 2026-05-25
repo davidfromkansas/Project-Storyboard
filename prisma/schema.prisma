@@ -117,14 +117,15 @@ model GenerationJob {
 }
 
 model ContentCache {
-  id          String   @id @default(cuid())
-  userId      String
-  urlHash     String   @unique
-  url         String
-  deckId      String
-  contentHash String?  // Hash of deck content for invalidation on edits
-  createdAt   DateTime @default(now())
-  expiresAt   DateTime
+  id               String   @id @default(cuid())
+  userId           String
+  urlHash          String   @unique
+  url              String
+  deckId           String
+  contentHash      String?  // Hash of deck content for invalidation on edits
+  processedContent Json?    // Pre-processed content (simplified text, themes, statistics, quotes)
+  createdAt        DateTime @default(now())
+  expiresAt        DateTime
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
