@@ -8,7 +8,8 @@ const inter = Inter({
 });
 
 const siteUrl =
-  process.env.AUTH_URL || "https://glyph-ai-production.up.railway.app";
+  process.env.AUTH_URL ||
+  (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "http://localhost:3000");
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),

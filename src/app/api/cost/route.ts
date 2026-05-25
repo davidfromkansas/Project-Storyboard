@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
-const GLOBAL_SPENDING_CAP = 10.0; // $10 USD
+const GLOBAL_SPENDING_CAP = 100.0; // $100 USD
 
 export async function GET() {
   const session = await getSession();

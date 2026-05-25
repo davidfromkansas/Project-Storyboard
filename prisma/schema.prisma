@@ -90,6 +90,7 @@ model Slide {
   supportingIdeas   Json     // Array of {idea: string, details: string}
   infographicPrompt String   @db.Text
   imageUrl          String?
+  imageStatus       String   @default("pending") // pending, generating, completed, failed
   imageVersions     Json     @default("[]") // [{url, prompt, createdAt}]
   stylePreset       String   @default("whiteboard")
   createdAt         DateTime @default(now())

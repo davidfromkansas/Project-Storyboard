@@ -14,6 +14,7 @@ interface Slide {
   supportingIdeas: Array<{ Idea: string; Details: string; "Key Quotes"?: Array<{ text: string; context: string }> }>;
   infographicPrompt: string;
   imageUrl: string | null;
+  imageStatus: string;
 }
 
 interface ExaRaw {
@@ -70,6 +71,46 @@ export default function DeckViewer() {
     }
     fetchDeck();
   }, [params.id]);
+
+  // Poll for image updates while any slide is still generating.
+  // Starts once the initial fetch completes; stops when all images are done.
+  useEffect(() => {
+    if (loading || error) return;
+
+    let stopped = false;
+
+    async function pollImages() {
+      // Check initial state — bail if no generating slides
+      const initial = await fetch(`/api/decks/${params.id}`);
+      if (!initial.ok || stopped) return;
+      const initialData = await initial.json();
+      if (stopped) return;
+
+      const needsPoll = initialData.slides.some(
+        (s: Slide) => s.imageStatus !== "completed" && s.imageStatus !== "failed"
+      );
+      if (!needsPoll) return;
+
+      while (!stopped) {
+        await new Promise((r) => setTimeout(r, 3000));
+        if (stopped) break;
+        const res = await fetch(`/api/decks/${params.id}`);
+        if (!res.ok || stopped) break;
+        const data = await res.json();
+        if (stopped) break;
+        setDeck(data);
+
+        const allDone = data.slides.every(
+          (s: Slide) => s.imageStatus === "completed" || s.imageStatus === "failed"
+        );
+        if (allDone) break;
+      }
+    }
+
+    pollImages();
+
+    return () => { stopped = true; };
+  }, [loading, error, params.id]);
 
   async function handlePublish() {
     if (!deck) return;
@@ -195,10 +236,20 @@ export default function DeckViewer() {
                   alt={slide.mainIdea}
                   className="w-full h-full object-contain"
                 />
+              ) : slide?.imageStatus === "failed" ? (
+                <div className="w-full h-full flex items-center justify-center text-[#ef4444]">
+                  <div className="text-center space-y-2">
+                    <svg className="w-12 h-12 mx-auto opacity-70" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                    </svg>
+                    <p className="text-sm font-medium">Image generation failed</p>
+                    <p className="text-xs text-[#94a3b8]">This image could not be generated after multiple attempts</p>
+                  </div>
+                </div>
               ) : (
                 <div className="w-full h-full flex items-center justify-center text-[#94a3b8]">
                   <div className="text-center space-y-2">
-                    <svg className="w-12 h-12 mx-auto opacity-50" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <svg className="w-12 h-12 mx-auto opacity-50 animate-pulse" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                     </svg>
                     <p className="text-sm">Image generating...</p>

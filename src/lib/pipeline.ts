@@ -1,29 +1,48 @@
 import { extractArticleContent } from "./exa";
-import { openai } from "./openai";
+import { getOpenAI } from "./openai";
 import { prisma } from "./prisma";
 import { INSIGHT_EXTRACTION_PROMPT, IMAGE_STYLE_PREFIX } from "./prompts/index";
 import { getCachedDeck, cacheDeck, hashDeckContent } from "./cache";
 import { preprocessContent } from "./content-preprocessor";
 
-function createLimiter(concurrency: number) {
-  let active = 0;
-  const queue: Array<() => void> = [];
-  return <T>(fn: () => Promise<T>): Promise<T> => {
-    return new Promise<T>((resolve, reject) => {
-      const run = () => {
-        active++;
-        fn()
-          .then(resolve)
-          .catch(reject)
-          .finally(() => {
-            active--;
-            if (queue.length > 0) queue.shift()!();
-          });
-      };
-      if (active < concurrency) run();
-      else queue.push(run);
-    });
-  };
+const MAX_RETRIES = 3;
+const RETRY_BASE_DELAY_MS = 1000;
+
+async function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+async function generateImageWithRetry(
+  prompt: string,
+): Promise<string | null> {
+  for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+    try {
+      const image = await getOpenAI().images.generate({
+        model: "gpt-image-2",
+        prompt,
+        n: 1,
+        size: "1536x1024",
+        quality: "medium",
+      });
+
+      const imageData = image.data?.[0];
+      if (imageData && imageData.b64_json) {
+        return `data:image/png;base64,${imageData.b64_json}`;
+      }
+
+      console.warn(`[pipeline] Image generation attempt ${attempt}/${MAX_RETRIES}: no b64_json in response`);
+    } catch (err) {
+      console.error(`[pipeline] Image generation attempt ${attempt}/${MAX_RETRIES} failed:`, err);
+    }
+
+    if (attempt < MAX_RETRIES) {
+      const delay = RETRY_BASE_DELAY_MS * Math.pow(2, attempt - 1);
+      console.log(`[pipeline] Retrying image generation in ${delay}ms...`);
+      await sleep(delay);
+    }
+  }
+
+  return null;
 }
 
 export interface PipelineProgress {
@@ -34,7 +53,7 @@ export interface PipelineProgress {
   error?: string;
 }
 
-export type ProgressCallback = (progress: PipelineProgress) => void;
+export type ProgressCallback = (progress: PipelineProgress) => void | Promise<void>;
 
 interface InsightRaw {
   "Main Idea": string;
@@ -103,18 +122,19 @@ export async function runPipeline(
     if (!withinBudget) {
       await prisma.generationJob.update({
         where: { id: jobId },
-        data: { status: "failed", error: "Global spending cap reached ($10)" },
+        data: { status: "failed", error: "Global spending cap reached ($100)" },
       });
-      onProgress({ step: "failed", error: "Global spending cap reached ($10). No more generations allowed." });
+      onProgress({ step: "failed", error: "Global spending cap reached ($100). No more generations allowed." });
       return;
     }
 
     // Step 1: Extract content via Exa
-    onProgress({ step: "extracting", details: "Extracting article content..." });
+    const extractProgress: PipelineProgress = { step: "extracting", details: "Extracting article content..." };
     await prisma.generationJob.update({
       where: { id: jobId },
-      data: { status: "extracting" },
+      data: { status: "extracting", progress: JSON.parse(JSON.stringify(extractProgress)) },
     });
+    onProgress(extractProgress);
 
     const content = await extractArticleContent(url);
     await logCost(userId, null, null, "exa", "extract", COST_EXA);
@@ -125,15 +145,16 @@ export async function runPipeline(
     console.log(`[preprocessor] Content type: ${processedContent.contentType}, ${processedContent.structure.length} sections, ${processedContent.statistics.length} statistics, ${processedContent.quotes.length} quotes, ${processedContent.comparisons.length} comparisons, ${processedContent.processes.length} processes`);
 
     // Step 2: Generate insights using raw text + supplementary metadata
-    onProgress({ step: "analyzing", details: "Analyzing key insights..." });
+    const analyzeProgress: PipelineProgress = { step: "analyzing", details: "Analyzing key insights..." };
     await prisma.generationJob.update({
       where: { id: jobId },
-      data: { status: "analyzing" },
+      data: { status: "analyzing", progress: JSON.parse(JSON.stringify(analyzeProgress)) },
     });
+    onProgress(analyzeProgress);
 
     const userMessage = `## Article Text\n\n${content.text}\n\n## Supplementary Metadata\n\n${JSON.stringify(processedContent, null, 2)}`;
 
-    const completion = await openai.responses.create({
+    const completion = await getOpenAI().responses.create({
       model: "gpt-4.1",
       input: [
         { role: "system", content: INSIGHT_EXTRACTION_PROMPT },
@@ -194,67 +215,60 @@ export async function runPipeline(
       });
     }
 
-    // Step 3: Generate images with gpt-image-2
-    onProgress({
-      step: "generating_images",
-      current: 0,
-      total: insights.length,
-      details: `Generating infographic 0 of ${insights.length}...`,
-    });
+    // Mark job complete early so the user is redirected to the deck viewer
+    const completeProgress: PipelineProgress = { step: "complete", details: deck.id };
     await prisma.generationJob.update({
       where: { id: jobId },
-      data: { status: "generating_images" },
+      data: { status: "complete", completedAt: new Date(), progress: JSON.parse(JSON.stringify(completeProgress)) },
     });
+    onProgress(completeProgress);
 
+    // Step 3: Generate images with gpt-image-2 in ordered batches
+    // Images generate after the user has been redirected to the deck viewer.
+    // The deck viewer polls for updates as images complete.
     const slides = await prisma.slide.findMany({
       where: { deckId: deck.id },
       orderBy: { position: "asc" },
     });
 
-    const limit = createLimiter(8);
-    let completed = 0;
+    // Mark all slides as "generating"
+    await prisma.slide.updateMany({
+      where: { deckId: deck.id },
+      data: { imageStatus: "generating" },
+    });
 
-    await Promise.all(
-      slides.map((slide) =>
-        limit(async () => {
-          try {
-            const fullPrompt = IMAGE_STYLE_PREFIX + slide.infographicPrompt;
-            const image = await openai.images.generate({
-              model: "gpt-image-2",
-              prompt: fullPrompt,
-              n: 1,
-              size: "1536x1024",
-              quality: "medium",
+    // Generate in ordered batches of 3 so early slides are ready first
+    const BATCH_SIZE = 3;
+    for (let batchStart = 0; batchStart < slides.length; batchStart += BATCH_SIZE) {
+      const batch = slides.slice(batchStart, batchStart + BATCH_SIZE);
+
+      await Promise.all(
+        batch.map(async (slide) => {
+          const fullPrompt = IMAGE_STYLE_PREFIX + slide.infographicPrompt;
+          const imageUrl = await generateImageWithRetry(fullPrompt);
+
+          if (imageUrl) {
+            await prisma.slide.update({
+              where: { id: slide.id },
+              data: {
+                imageUrl,
+                imageStatus: "completed",
+                imageVersions: [
+                  { url: imageUrl, prompt: slide.infographicPrompt, createdAt: new Date().toISOString() },
+                ],
+              },
             });
-
-            const imageData = image.data?.[0];
-            if (imageData && imageData.b64_json) {
-              // Store base64 as a data URL for now (Railway storage in future)
-              const imageUrl = `data:image/png;base64,${imageData.b64_json}`;
-              await prisma.slide.update({
-                where: { id: slide.id },
-                data: {
-                  imageUrl,
-                  imageVersions: [
-                    { url: imageUrl, prompt: slide.infographicPrompt, createdAt: new Date().toISOString() },
-                  ],
-                },
-              });
-            }
-
-            await logCost(userId, deck.id, slide.id, "gpt-image-2", "image_gen", COST_IMAGE_MEDIUM);
-          } catch (err) {
-            console.error(`[pipeline] Image generation failed for slide ${slide.position}:`, err);
+          } else {
+            await prisma.slide.update({
+              where: { id: slide.id },
+              data: { imageStatus: "failed" },
+            });
+            console.error(`[pipeline] All retries exhausted for slide ${slide.position}`);
           }
 
-          completed++;
-          onProgress({
-            step: "generating_images",
-            current: completed,
-            total: slides.length,
-            details: `Generating infographic ${completed} of ${slides.length}...`,
-          });
+          await logCost(userId, deck.id, slide.id, "gpt-image-2", "image_gen", COST_IMAGE_MEDIUM);
         })
+<<<<<<< HEAD
       )
     );
 
@@ -272,16 +286,36 @@ export async function runPipeline(
     if (deckWithSlides) {
       const contentHash = hashDeckContent(deckWithSlides);
       await cacheDeck(userId, url, deck.id, contentHash, processedContent);
+=======
+      );
+>>>>>>> origin/main
     }
 
-    onProgress({ step: "complete", details: deck.id });
+    // Cache deck if all images generated successfully
+    const failedSlideCount = await prisma.slide.count({
+      where: { deckId: deck.id, imageStatus: "failed" },
+    });
+
+    if (failedSlideCount === 0) {
+      const deckWithSlides = await prisma.deck.findUnique({
+        where: { id: deck.id },
+        include: { slides: true },
+      });
+      if (deckWithSlides) {
+        const contentHash = hashDeckContent(deckWithSlides);
+        await cacheDeck(userId, url, deck.id, contentHash);
+      }
+    } else {
+      console.warn(`[pipeline] Skipping cache for deck ${deck.id}: ${failedSlideCount} slide(s) have failed images`);
+    }
   } catch (err) {
     const errorMsg = err instanceof Error ? err.message : "Unknown error";
     console.error("[pipeline] Error:", err);
+    const failedProgress: PipelineProgress = { step: "failed", error: errorMsg };
     await prisma.generationJob.update({
       where: { id: jobId },
-      data: { status: "failed", error: errorMsg },
+      data: { status: "failed", error: errorMsg, progress: JSON.parse(JSON.stringify(failedProgress)) },
     });
-    onProgress({ step: "failed", error: errorMsg });
+    onProgress(failedProgress);
   }
 }

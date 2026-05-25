@@ -89,6 +89,45 @@ function GeneratePageInner() {
     if (!url || started.current) return;
     started.current = true;
 
+    let evtSource: EventSource | null = null;
+    let retryCount = 0;
+    const MAX_RETRIES = 5;
+    const RETRY_DELAY_MS = 2000;
+
+    function connectToStream(jobId: string) {
+      evtSource = new EventSource(`/api/generate/${jobId}/stream`);
+
+      evtSource.onmessage = (event) => {
+        retryCount = 0; // Reset on successful message
+        const data: Progress = JSON.parse(event.data);
+        setProgress(data);
+
+        if (data.step === "complete" && data.details) {
+          evtSource?.close();
+          setTimeout(() => router.push(`/deck/${data.details}`), 1000);
+        }
+
+        if (data.step === "failed") {
+          evtSource?.close();
+        }
+      };
+
+      evtSource.onerror = () => {
+        evtSource?.close();
+        setProgress((currentProgress) => {
+          if (currentProgress.step === "complete" || currentProgress.step === "failed") {
+            return currentProgress;
+          }
+          if (retryCount < MAX_RETRIES) {
+            retryCount++;
+            setTimeout(() => connectToStream(jobId), RETRY_DELAY_MS);
+            return currentProgress; // Keep showing current step while reconnecting
+          }
+          return { step: "failed", error: "Connection lost. Please try again." };
+        });
+      };
+    }
+
     async function generate() {
       // Step 1: Create job
       const res = await fetch("/api/generate", {
@@ -105,38 +144,15 @@ function GeneratePageInner() {
 
       const { jobId } = await res.json();
 
-      // Step 2: Connect to SSE stream
-      const streamUrl = force
-        ? `/api/generate/${jobId}/stream?force=true`
-        : `/api/generate/${jobId}/stream`;
-      const evtSource = new EventSource(streamUrl);
-
-      evtSource.onmessage = (event) => {
-        const data: Progress = JSON.parse(event.data);
-        setProgress(data);
-
-        if (data.step === "complete" && data.details) {
-          evtSource.close();
-          // Redirect to deck viewer
-          setTimeout(() => router.push(`/deck/${data.details}`), 1000);
-        }
-
-        if (data.step === "failed") {
-          evtSource.close();
-        }
-      };
-
-      evtSource.onerror = () => {
-        evtSource.close();
-        setProgress((p) =>
-          p.step !== "complete" && p.step !== "failed"
-            ? { step: "failed", error: "Connection lost" }
-            : p
-        );
-      };
+      // Step 2: Connect to SSE stream with auto-reconnect
+      connectToStream(jobId);
     }
 
     generate();
+
+    return () => {
+      evtSource?.close();
+    };
   }, [url, router]);
 
   const stepIndex = ["extracting", "analyzing", "generating_images", "complete"].indexOf(progress.step);

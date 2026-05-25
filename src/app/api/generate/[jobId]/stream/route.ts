@@ -1,9 +1,12 @@
 import { NextRequest } from "next/server";
 import { getSession } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { runPipeline, PipelineProgress } from "@/lib/pipeline";
+import { PipelineProgress } from "@/lib/pipeline";
 
 export const dynamic = "force-dynamic";
+export const maxDuration = 60;
+
+const POLL_INTERVAL_MS = 1500;
 
 export async function GET(
   request: NextRequest,
@@ -26,7 +29,14 @@ export async function GET(
     return new Response("Job not found", { status: 404 });
   }
 
-  // If job already complete or failed, return current state
+  // If job is queued, trigger the pipeline run via internal API
+  if (job.status === "queued") {
+    const baseUrl = getBaseUrl(request);
+    const cookie = request.headers.get("cookie") || "";
+    triggerPipelineRun(baseUrl, jobId, cookie);
+  }
+
+  // If job already complete or failed, return current state immediately
   if (job.status === "complete" || job.status === "failed") {
     const encoder = new TextEncoder();
     const body = encoder.encode(
@@ -45,36 +55,84 @@ export async function GET(
     });
   }
 
-  // Start SSE stream
+  // Poll DB for progress updates and stream them as SSE
   const encoder = new TextEncoder();
   const stream = new ReadableStream({
     start(controller) {
-      const send = (progress: PipelineProgress) => {
+      let lastProgressJson = "";
+      let closed = false;
+
+      const poll = async () => {
+        if (closed) return;
+
         try {
-          controller.enqueue(
-            encoder.encode(`data: ${JSON.stringify(progress)}\n\n`)
-          );
-          if (progress.step === "complete" || progress.step === "failed") {
+          const currentJob = await prisma.generationJob.findUnique({
+            where: { id: jobId },
+          });
+
+          if (!currentJob) {
+            sendEvent(controller, encoder, { step: "failed", error: "Job not found" });
             controller.close();
+            closed = true;
+            return;
           }
+
+          // Build progress from DB state
+          const progress: PipelineProgress = (currentJob.progress as unknown as PipelineProgress) || {
+            step: currentJob.status as PipelineProgress["step"],
+            error: currentJob.error ?? undefined,
+            details: currentJob.status === "complete" ? currentJob.deckId ?? undefined : undefined,
+          };
+
+          const progressJson = JSON.stringify(progress);
+
+          // Only send if progress has changed
+          if (progressJson !== lastProgressJson) {
+            lastProgressJson = progressJson;
+            sendEvent(controller, encoder, progress);
+          }
+
+          // Check if terminal state
+          if (currentJob.status === "complete" || currentJob.status === "failed") {
+            // Send final state if not already sent
+            const finalProgress: PipelineProgress = {
+              step: currentJob.status as "complete" | "failed",
+              details: currentJob.status === "complete" ? (currentJob.deckId ?? undefined) : undefined,
+              error: currentJob.error ?? undefined,
+            };
+            const finalJson = JSON.stringify(finalProgress);
+            if (finalJson !== lastProgressJson) {
+              sendEvent(controller, encoder, finalProgress);
+            }
+            controller.close();
+            closed = true;
+            return;
+          }
+
+          // Send keep-alive comment to prevent connection timeout
+          try {
+            controller.enqueue(encoder.encode(": keep-alive\n\n"));
+          } catch {
+            closed = true;
+            return;
+          }
+
+          // Schedule next poll
+          setTimeout(poll, POLL_INTERVAL_MS);
         } catch {
-          // Stream may be closed
+          if (!closed) {
+            try {
+              controller.close();
+            } catch {
+              // Already closed
+            }
+            closed = true;
+          }
         }
       };
 
-      // Find user and start pipeline
-      prisma.user
-        .findUnique({ where: { email: session.user.email } })
-        .then((user) => {
-          if (!user) {
-            send({ step: "failed", error: "User not found" });
-            return;
-          }
-          runPipeline(job.sourceUrl, user.id, jobId, send, force);
-        })
-        .catch((err) => {
-          send({ step: "failed", error: err.message });
-        });
+      // Start polling
+      poll();
     },
   });
 
@@ -84,5 +142,35 @@ export async function GET(
       "Cache-Control": "no-cache",
       Connection: "keep-alive",
     },
+  });
+}
+
+function sendEvent(
+  controller: ReadableStreamDefaultController,
+  encoder: TextEncoder,
+  progress: PipelineProgress
+) {
+  try {
+    controller.enqueue(encoder.encode(`data: ${JSON.stringify(progress)}\n\n`));
+  } catch {
+    // Stream may be closed
+  }
+}
+
+function getBaseUrl(request: NextRequest): string {
+  // Use the request's origin for the internal API call
+  const host = request.headers.get("host") || "localhost:3000";
+  const protocol = request.headers.get("x-forwarded-proto") || "https";
+  return `${protocol}://${host}`;
+}
+
+function triggerPipelineRun(baseUrl: string, jobId: string, cookie: string) {
+  // Fire-and-forget: trigger the pipeline run endpoint
+  // This creates a separate serverless function invocation on Vercel
+  fetch(`${baseUrl}/api/generate/${jobId}/run`, {
+    method: "POST",
+    headers: { cookie },
+  }).catch((err) => {
+    console.error("[stream] Failed to trigger pipeline run:", err);
   });
 }

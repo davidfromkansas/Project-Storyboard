@@ -41,6 +41,7 @@ export async function GET(
       supportingIdeas: s.supportingIdeas,
       infographicPrompt: s.infographicPrompt,
       imageUrl: s.imageUrl,
+      imageStatus: s.imageStatus,
     })),
   });
 }
